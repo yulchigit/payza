@@ -1,0 +1,314 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #1E40AF; /* blue-800 */
+    --color-primary-foreground: #FFFFFF; /* white */
+    --color-secondary: #0F172A; /* slate-900 */
+    --color-secondary-foreground: #F8FAFC; /* slate-50 */
+    --color-accent: #059669; /* emerald-600 */
+    --color-accent-foreground: #FFFFFF; /* white */
+    --color-background: #FEFEFE; /* near-white */
+    --color-foreground: #0F172A; /* slate-900 */
+    --color-card: #F8FAFC; /* slate-50 */
+    --color-card-foreground: #334155; /* slate-700 */
+    --color-popover: #FFFFFF; /* white */
+    --color-popover-foreground: #0F172A; /* slate-900 */
+    --color-muted: #F1F5F9; /* slate-100 */
+    --color-muted-foreground: #64748B; /* slate-500 */
+    --color-border: #E2E8F0; /* slate-200 */
+    --color-input: #E2E8F0; /* slate-200 */
+    --color-ring: #1E40AF; /* blue-800 */
+    --color-success: #10B981; /* emerald-500 */
+    --color-success-foreground: #FFFFFF; /* white */
+    --color-warning: #F59E0B; /* amber-500 */
+    --color-warning-foreground: #FFFFFF; /* white */
+    --color-error: #EF4444; /* red-500 */
+    --color-error-foreground: #FFFFFF; /* white */
+    --color-destructive: #EF4444; /* red-500 */
+    --color-destructive-foreground: #FFFFFF; /* white */
+
+    --font-heading: 'Manrope', sans-serif;
+    --font-body: 'Source Sans 3', sans-serif;
+    --font-caption: 'Inter', sans-serif;
+    --font-data: 'JetBrains Mono', monospace;
+
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1);
+    --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.12);
+    --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.12);
+  }
+
+  .dark {
+    --color-primary: #3B82F6; /* blue-500 */
+    --color-primary-foreground: #FFFFFF; /* white */
+    --color-secondary: #1E293B; /* slate-800 */
+    --color-secondary-foreground: #F8FAFC; /* slate-50 */
+    --color-accent: #10B981; /* emerald-500 */
+    --color-accent-foreground: #FFFFFF; /* white */
+    --color-background: #0A0F1C; /* dark-blue-950 */
+    --color-foreground: #E2E8F0; /* slate-200 */
+    --color-card: #1E293B; /* slate-800 */
+    --color-card-foreground: #CBD5E1; /* slate-300 */
+    --color-popover: #1E293B; /* slate-800 */
+    --color-popover-foreground: #E2E8F0; /* slate-200 */
+    --color-muted: #334155; /* slate-700 */
+    --color-muted-foreground: #94A3B8; /* slate-400 */
+    --color-border: #334155; /* slate-700 */
+    --color-input: #334155; /* slate-700 */
+    --color-ring: #3B82F6; /* blue-500 */
+    --color-success: #10B981; /* emerald-500 */
+    --color-success-foreground: #FFFFFF; /* white */
+    --color-warning: #F59E0B; /* amber-500 */
+    --color-warning-foreground: #FFFFFF; /* white */
+    --color-error: #EF4444; /* red-500 */
+    --color-error-foreground: #FFFFFF; /* white */
+    --color-destructive: #EF4444; /* red-500 */
+    --color-destructive-foreground: #FFFFFF; /* white */
+
+    --shadow-sm: 0 0 10px rgba(59, 130, 246, 0.1);
+    --shadow-md: 0 0 15px rgba(59, 130, 246, 0.15);
+    --shadow-lg: 0 0 20px rgba(59, 130, 246, 0.2);
+    --shadow-xl: 0 0 30px rgba(59, 130, 246, 0.25);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .caption {
+    font-family: var(--font-caption);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .data-text {
+    font-family: var(--font-data);
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      font-size: 15px;
+    }
+  }
+}
+
+@layer components {
+  .nav-header {
+    @apply fixed top-0 left-0 right-0 h-16 bg-card shadow-md z-[100] flex items-center px-6;
+  }
+
+  .nav-header-logo {
+    @apply flex items-center gap-3 mr-8;
+  }
+
+  .nav-header-brand {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-250;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  }
+
+  .nav-header-brand-text {
+    @apply text-xl font-semibold text-foreground;
+    font-family: var(--font-heading);
+  }
+
+  .nav-header-menu {
+    @apply hidden lg:flex items-center gap-1 flex-1;
+  }
+
+  .nav-header-item {
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-250;
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted;
+  }
+.nav-header-item.active  {
+    @apply text-primary;
+  }
+
+  .nav-header-actions {
+    @apply flex items-center gap-3 ml-auto;
+  }
+
+  .nav-mobile-toggle {
+    @apply lg:hidden fixed top-4 right-4 z-[110] w-10 h-10 rounded-lg bg-card shadow-md flex items-center justify-center transition-all duration-250;
+    @apply hover:bg-muted active:scale-95;
+  }
+
+  .nav-mobile-overlay {
+    @apply fixed inset-0 bg-background z-[105] lg:hidden;
+    @apply flex flex-col;
+  }
+
+  .nav-mobile-header {
+    @apply flex items-center justify-between p-6 border-b border-border;
+  }
+
+  .nav-mobile-menu {
+    @apply flex flex-col gap-2 p-6 overflow-y-auto;
+  }
+.nav-mobile-item  {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-250;
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted;
+  }
+.nav-mobile-item.active  {
+    @apply text-primary;
+  }
+
+  .breadcrumb-container {
+    @apply flex items-center gap-2 py-4 text-sm;
+    font-family: var(--font-caption);
+  }
+
+  .breadcrumb-item {
+    @apply flex items-center gap-2 text-muted-foreground transition-colors duration-250;
+  }
+
+  .breadcrumb-item.active {
+    @apply text-foreground font-medium;
+  }
+
+  .breadcrumb-separator {
+    @apply text-muted-foreground;
+  }
+
+  .quick-action-panel {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+.quick-action-card  {
+    @apply bg-card rounded-xl p-8 border border-border transition-all duration-250;
+    @apply hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .quick-action-icon {
+    @apply w-12 h-12 rounded-lg flex items-center justify-center mb-4;
+  }
+
+  .quick-action-title {
+    @apply text-lg font-semibold text-foreground mb-2;
+    font-family: var(--font-heading);
+  }
+
+  .quick-action-description {
+    @apply text-sm text-muted-foreground mb-6;
+  }
+
+  .status-indicator {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium;
+    font-family: var(--font-caption);
+  }
+.status-indicator.success  {
+    @apply text-success;
+  }
+.status-indicator.warning  {
+    @apply text-warning;
+  }
+.status-indicator.error  {
+    @apply text-error;
+  }
+
+  .status-indicator.pending {
+    @apply bg-muted text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .transition-250 {
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .transition-spring {
+    transition: all 250ms cubic-bezier(0.34, 1.26, 0.64, 1);
+  }
+
+  .active\:scale-97:active {
+    transform: scale(0.97);
+  }
+
+  .hover\:lift:hover {
+    transform: translateY(-1px);
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .container-padding {
+    @apply px-6 lg:px-8;
+  }
+
+  .section-spacing {
+    @apply py-24 lg:py-32;
+  }
+
+  .card-padding {
+    @apply p-8;
+  }
+
+  @media (max-width: 768px) {
+    .section-spacing {
+      @apply py-16;
+    }
+
+    .card-padding {
+      @apply p-6;
+    }
+  }
+}
