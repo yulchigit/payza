@@ -5,6 +5,8 @@ const { ZodError } = require("zod");
 const env = require("./config/env");
 const healthRoutes = require("./routes/healthRoutes");
 const authRoutes = require("./routes/authRoutes");
+const walletRoutes = require("./routes/walletRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter } = require("./middleware/rateLimiters");
 
@@ -32,6 +34,8 @@ app.use(
 
 app.use("/api", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/transactions", transactionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

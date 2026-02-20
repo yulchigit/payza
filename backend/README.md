@@ -8,6 +8,7 @@
 4. Run SQL schema:
    - execute `backend/sql/001_init.sql` on your PostgreSQL database
    - execute `backend/sql/002_security_hardening.sql` on your PostgreSQL database
+   - execute `backend/sql/003_wallet_and_transactions.sql` on your PostgreSQL database
 5. Start API:
    - `npm --prefix backend run dev`
 
@@ -16,6 +17,9 @@
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me` (Bearer token required)
+- `GET /api/wallet/overview` (Bearer token required)
+- `GET /api/transactions` (Bearer token required)
+- `POST /api/transactions` (Bearer token required)
 
 ## Security baseline
 - Helmet security headers

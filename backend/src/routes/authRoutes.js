@@ -79,6 +79,18 @@ router.post(
       [user.id]
     );
 
+    await pool.query(
+      `INSERT INTO payment_methods (user_id, name, type, category, status)
+       VALUES
+        ($1, 'Uzcard', 'Debit Card', 'traditional', 'disconnected'),
+        ($1, 'Humo', 'Debit Card', 'traditional', 'disconnected'),
+        ($1, 'Visa', 'Credit Card', 'traditional', 'disconnected'),
+        ($1, 'USDT Wallet', 'Tether (TRC-20)', 'crypto', 'disconnected'),
+        ($1, 'Bitcoin Wallet', 'BTC (Native SegWit)', 'crypto', 'disconnected')
+       ON CONFLICT (user_id, name) DO NOTHING`,
+      [user.id]
+    );
+
     const token = signAccessToken({ id: user.id, email: user.email });
 
     await createAuthAuditLog({

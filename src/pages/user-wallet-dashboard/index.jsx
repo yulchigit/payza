@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
 import QuickActionPanel from '../../components/ui/QuickActionPanel';
 import TotalBalanceCard from './components/TotalBalanceCard';
@@ -6,100 +6,99 @@ import BalanceCard from './components/BalanceCard';
 import ActionButtons from './components/ActionButtons';
 import RecentTransactions from './components/RecentTransactions';
 import QuickLinks from './components/QuickLinks';
+import apiClient from 'lib/apiClient';
 
 const UserWalletDashboard = () => {
-  const mockData = {
-    totalBalance: 15847.32,
-    traditionalBalances: [
-    { currency: "UZS", amount: 5420000 },
-    { currency: "USD", amount: 3250.50 }],
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    cryptoBalances: [
-    { currency: "USDT", amount: 5876.82 },
-    { currency: "BTC", amount: 0.15 }],
-
-    traditionalMethods: [
-    { name: "Uzcard", status: "active" },
-    { name: "Humo", status: "active" },
-    { name: "Visa", status: "active" }],
-
-    cryptoMethods: [
-    { name: "USDT Wallet", status: "active" },
-    { name: "BTC Wallet", status: "active" }],
-
-    recentTransactions: [
-    {
-      id: "txn001",
-      type: "receive",
-      description: "Payment from John Smith",
-      method: "Uzcard",
-      date: "2026-01-06T05:30:00",
-      amount: 250000,
-      currency: "UZS",
-      status: "success"
-    },
-    {
-      id: "txn002",
-      type: "send",
-      description: "Transfer to Sarah Johnson",
-      method: "Visa",
-      date: "2026-01-05T14:20:00",
-      amount: 125.50,
-      currency: "USD",
-      status: "success"
-    },
-    {
-      id: "txn003",
-      type: "convert",
-      description: "USDT to USD Conversion",
-      method: "Crypto Exchange",
-      date: "2026-01-05T10:15:00",
-      amount: 500,
-      currency: "USD",
-      status: "success"
-    },
-    {
-      id: "txn004",
-      type: "receive",
-      description: "Crypto payment received",
-      method: "USDT Wallet",
-      date: "2026-01-04T18:45:00",
-      amount: 1250.00,
-      currency: "USDT",
-      status: "success"
-    },
-    {
-      id: "txn005",
-      type: "withdrawal",
-      description: "Bank withdrawal",
-      method: "Humo Card",
-      date: "2026-01-04T09:30:00",
-      amount: 500000,
-      currency: "UZS",
-      status: "processing"
-    },
-    {
-      id: "txn006",
-      type: "send",
-      description: "Payment to merchant",
-      method: "BTC Wallet",
-      date: "2026-01-03T16:20:00",
-      amount: 0.005,
-      currency: "BTC",
-      status: "success"
-    }]
-
+  const normalizeMethodStatus = (status) => {
+    if (status === 'connected') return 'active';
+    if (status === 'disconnected') return 'inactive';
+    return status || 'pending';
   };
 
-  const calculateTraditionalTotal = () => {
-    const uzsInUsd = mockData?.traditionalBalances?.[0]?.amount / 12500;
-    return uzsInUsd + mockData?.traditionalBalances?.[1]?.amount;
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  const calculateCryptoTotal = () => {
-    const btcInUsd = mockData?.cryptoBalances?.[1]?.amount * 45000;
-    return mockData?.cryptoBalances?.[0]?.amount + btcInUsd;
-  };
+    const loadOverview = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const response = await apiClient.get('/wallet/overview', {
+          params: { limit: 10 }
+        });
+
+        const data = response?.data?.data;
+        if (!data) {
+          throw new Error('Invalid dashboard response');
+        }
+
+        const normalized = {
+          totalBalance: Number(data?.summary?.totalBalanceUsd || 0),
+          traditionalBalances: (data?.traditionalBalances || [])?.map((item) => ({
+            currency: item?.currency,
+            amount: Number(item?.amount || 0)
+          })),
+          cryptoBalances: (data?.cryptoBalances || [])?.map((item) => ({
+            currency: item?.currency,
+            amount: Number(item?.amount || 0)
+          })),
+          traditionalMethods: (data?.traditionalMethods || [])?.map((item) => ({
+            name: item?.name,
+            status: normalizeMethodStatus(item?.status)
+          })),
+          cryptoMethods: (data?.cryptoMethods || [])?.map((item) => ({
+            name: item?.name,
+            status: normalizeMethodStatus(item?.status)
+          })),
+          recentTransactions: (data?.recentTransactions || [])?.map((item) => ({
+            id: item?.id,
+            type: item?.type || 'send',
+            description: item?.description || 'Transaction',
+            method: item?.method || 'Wallet',
+            date: item?.date,
+            amount: Number(item?.amount || 0),
+            currency: item?.currency || 'USD',
+            status: item?.status || 'pending'
+          }))
+        };
+
+        if (isMounted) {
+          setDashboardData(normalized);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError?.response?.data?.error || 'Failed to load wallet data');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadOverview();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const safeData = useMemo(
+    () =>
+      dashboardData || {
+        totalBalance: 0,
+        traditionalBalances: [],
+        cryptoBalances: [],
+        traditionalMethods: [],
+        cryptoMethods: [],
+        recentTransactions: []
+      },
+    [dashboardData]
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,9 +111,20 @@ const UserWalletDashboard = () => {
 
         <div className="space-y-6 md:space-y-8">
           <TotalBalanceCard
-            totalBalance={mockData?.totalBalance}
+            totalBalance={safeData?.totalBalance}
             currency="USD" />
 
+          {isLoading && (
+            <div className="bg-card border border-border rounded-xl p-4 text-sm text-muted-foreground">
+              Loading wallet overview...
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BalanceCard
@@ -122,16 +132,16 @@ const UserWalletDashboard = () => {
               icon="CreditCard"
               iconBg="bg-primary/10"
               iconColor="var(--color-primary)"
-              balances={mockData?.traditionalBalances}
-              connectedMethods={mockData?.traditionalMethods} />
+              balances={safeData?.traditionalBalances}
+              connectedMethods={safeData?.traditionalMethods} />
 
             <BalanceCard
               title="Cryptocurrency"
               icon="Bitcoin"
               iconBg="bg-accent/10"
               iconColor="var(--color-accent)"
-              balances={mockData?.cryptoBalances}
-              connectedMethods={mockData?.cryptoMethods} />
+              balances={safeData?.cryptoBalances}
+              connectedMethods={safeData?.cryptoMethods} />
 
           </div>
 
@@ -139,7 +149,7 @@ const UserWalletDashboard = () => {
 
           <QuickActionPanel userRole="user" />
 
-          <RecentTransactions transactions={mockData?.recentTransactions} />
+          <RecentTransactions transactions={safeData?.recentTransactions} />
 
           <QuickLinks />
         </div>
