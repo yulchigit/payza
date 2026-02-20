@@ -25,11 +25,24 @@ app.use(apiLimiter);
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || env.corsOrigins.length === 0 || env.corsOrigins.includes(origin)) {
+      if (!origin) {
         return callback(null, true);
       }
+
+      if (env.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (env.nodeEnv !== "production" && env.corsOrigins.length === 0) {
+        return callback(null, true);
+      }
+
       return callback(new Error("Not allowed by CORS"));
-    }
+    },
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
+    credentials: false,
+    maxAge: 600
   })
 );
 

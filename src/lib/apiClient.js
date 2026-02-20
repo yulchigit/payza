@@ -1,6 +1,24 @@
 import axios from "axios";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const resolveApiBaseUrl = () => {
+  const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+
+    if (isLocalHost) {
+      return "http://localhost:5000/api";
+    }
+  }
+
+  return "/api";
+};
+
+const apiBaseUrl = resolveApiBaseUrl();
 
 const apiClient = axios.create({
   baseURL: apiBaseUrl,

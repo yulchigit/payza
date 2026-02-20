@@ -1,33 +1,36 @@
-# PayZa Backend (MVP Foundation)
+# PayZa Backend
 
 ## Setup
-1. Copy `backend/.env.example` to `backend/.env`
-2. Update values (especially `DATABASE_URL` and `JWT_SECRET`)
-3. Install dependencies:
+1. `backend/.env.example` dan `backend/.env` yarating.
+2. Quyidagilarni to‘ldiring:
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `JWT_ISSUER`
+   - `JWT_AUDIENCE`
+3. Dependency o‘rnating:
    - `npm --prefix backend install`
-4. Run SQL schema:
-   - execute `backend/sql/001_init.sql` on your PostgreSQL database
-   - execute `backend/sql/002_security_hardening.sql` on your PostgreSQL database
-   - execute `backend/sql/003_wallet_and_transactions.sql` on your PostgreSQL database
-5. Start API:
+4. Migratsiya ishlating:
+   - `npm --prefix backend run migrate`
+5. API ishga tushiring:
    - `npm --prefix backend run dev`
 
 ## Endpoints
 - `GET /api/health`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `GET /api/auth/me` (Bearer token required)
-- `GET /api/wallet/overview` (Bearer token required)
-- `GET /api/transactions` (Bearer token required)
-- `POST /api/transactions` (Bearer token required)
-- `GET /api/transactions/:id` (Bearer token required)
-- `GET /api/payment-methods` (Bearer token required)
-- `PATCH /api/payment-methods/:id/status` (Bearer token required)
+- `GET /api/auth/me` (Bearer token)
+- `GET /api/wallet/overview` (Bearer token)
+- `GET /api/transactions` (Bearer token)
+- `POST /api/transactions` (Bearer token)
+- `GET /api/transactions/:id` (Bearer token)
+- `GET /api/payment-methods` (Bearer token)
+- `PATCH /api/payment-methods/:id/status` (Bearer token)
 
 ## Security baseline
 - Helmet security headers
-- Global and auth-specific rate limiting
+- API/Auth rate limiting
 - Strong password policy
 - JWT issuer/audience validation
-- Login brute-force lockout
-- Auth audit logs in database
+- Failed login lockout
+- Auth audit logs
+- Configurable CORS allowlist (`CORS_ORIGINS`)

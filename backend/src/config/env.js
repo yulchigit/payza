@@ -22,6 +22,15 @@ const parseOrigins = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const DEFAULT_DEV_CORS_ORIGINS = [
+  "http://localhost:4029",
+  "http://127.0.0.1:4029",
+  "http://localhost",
+  "http://127.0.0.1",
+  "capacitor://localhost",
+  "ionic://localhost"
+];
+
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -34,8 +43,17 @@ if (jwtSecret.length < 32) {
   throw new Error("JWT_SECRET is too short. Use at least 32 characters.");
 }
 
+const nodeEnv = process.env.NODE_ENV || "development";
+const providedCorsOrigins = parseOrigins(process.env.CORS_ORIGINS);
+const corsOrigins =
+  providedCorsOrigins.length > 0
+    ? providedCorsOrigins
+    : nodeEnv === "production"
+      ? []
+      : DEFAULT_DEV_CORS_ORIGINS;
+
 module.exports = {
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
   port: Number(process.env.PORT || 5000),
   databaseUrl: process.env.DATABASE_URL,
   jwtSecret,
@@ -47,5 +65,5 @@ module.exports = {
   authLockMinutes: clamp(toInt(process.env.AUTH_LOCK_MINUTES, 15), 5, 120),
   apiRateLimitWindowMs: clamp(toInt(process.env.API_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000), 60_000, 3_600_000),
   apiRateLimitMax: clamp(toInt(process.env.API_RATE_LIMIT_MAX, 300), 50, 5_000),
-  corsOrigins: parseOrigins(process.env.CORS_ORIGINS)
+  corsOrigins
 };

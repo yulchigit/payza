@@ -1,26 +1,73 @@
-# PayZa_asosiy
+# PayZa
 
-PayZa is a fintech web app for payments, wallet dashboard, merchant analytics, and crypto/card conversion flows.
+PayZa - React/Vite frontend + Node.js/Express backend asosidagi fintech platforma.
 
-## Tech stack
-- React 18
-- Vite 5
-- Redux Toolkit
-- React Router v6
-- Tailwind CSS
+## Stack
+- Frontend: React 18, Vite 5, Redux Toolkit, Tailwind
+- Mobile wrapper: Capacitor (Android/iOS)
+- Backend: Express, PostgreSQL, JWT, Zod
 
-## Run locally
+## 1) Local ishga tushirish
+
+### Frontend
 ```bash
 npm install
 npm run start
 ```
 
-Frontend API base URL (example):
+### Backend
 ```bash
-VITE_API_BASE_URL=http://localhost:5000/api
+npm run api:install
+npm run api:migrate
+npm run api:dev
 ```
 
-## Build
+Backend `backend/.env` ichida ishlaydi. Minimal qiymatlar:
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_ISSUER`
+- `JWT_AUDIENCE`
+
+## 2) Frontend API sozlamasi
+
+Frontend API URL aniqlash tartibi:
+1. `VITE_API_BASE_URL` berilgan bo‘lsa shu ishlatiladi.
+2. Localhost bo‘lsa: `http://localhost:5000/api`
+3. Aks holda fallback: `/api`
+
+Root `.env` faylni repoga qo‘shmang. Namuna uchun `.env.example` bor.
+
+## 3) Production deploy ketma-ketligi
+
+1. PostgreSQL production bazani tayyorlang.
+2. Backendni deploy qiling (Railway/Render/Fly/VM).
+3. Backend envlarni kiriting:
+   - `NODE_ENV=production`
+   - `DATABASE_URL=...`
+   - `JWT_SECRET=...` (kamida 32 belgi)
+   - `JWT_ISSUER=...`
+   - `JWT_AUDIENCE=...`
+   - `CORS_ORIGINS=https://your-web-domain.com,capacitor://localhost`
+4. Backendda migratsiya ishlating: `npm run api:migrate`.
+5. Vercel project envga kiriting:
+   - `VITE_API_BASE_URL=https://your-backend-domain/api`
+6. Frontendni deploy qiling.
+
+## 4) Android/iOS yangilanish oqimi
+
+Kodga o‘zgarish kiritilganda:
+1. Web: `git push` -> Vercel auto deploy.
+2. Mobile (Capacitor): alohida sync/build kerak:
 ```bash
-npm run build
+npm run mobile:sync
 ```
+3. Android Studio/Xcode ichida yangi build (`.aab`/`.apk` yoki iOS archive) chiqariladi.
+
+`git push`ning o‘zi Android/iOS ilovani avtomatik update qilmaydi.
+
+## 5) Muhim xavfsizlik eslatmalari
+
+- `.env` va boshqa maxfiy fayllar repoga kiritilmaydi.
+- `CORS_ORIGINS` productionda aniq domenlar bilan to‘ldiriladi.
+- JWT secret kuchli bo‘lishi shart.
+- Auth endpointlar rate limit bilan himoyalangan.

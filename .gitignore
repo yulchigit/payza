@@ -3,7 +3,12 @@ node_modules
 .idea
 package-lock.json
 /build
+/dist
 .vscode/
 .idea/
 vite.config.*s.*
+.env
+.env.*
+!.env.example
 backend/.env
+backend/api-dev.log
