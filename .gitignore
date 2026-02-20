@@ -12,3 +12,4 @@ vite.config.*s.*
 !.env.example
 backend/.env
 backend/api-dev.log
+backend/api-dev*.log

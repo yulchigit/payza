@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodRoutes");
+const recipientRoutes = require("./routes/recipientRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter } = require("./middleware/rateLimiters");
 
@@ -51,6 +52,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
+app.use("/api/recipients", recipientRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

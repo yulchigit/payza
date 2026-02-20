@@ -2,16 +2,16 @@
 
 ## Setup
 1. `backend/.env.example` dan `backend/.env` yarating.
-2. Quyidagilarni to‘ldiring:
+2. Quyidagilarni toldiring:
    - `DATABASE_URL`
    - `JWT_SECRET`
    - `JWT_ISSUER`
    - `JWT_AUDIENCE`
-3. Dependency o‘rnating:
+3. Dependency ornating:
    - `npm --prefix backend install`
 4. Migratsiya ishlating:
    - `npm --prefix backend run migrate`
-   - Bu skript `backend/sql` ichidagi barcha migratsiyalarni (`001...004...`) ketma-ket ishlatadi.
+   - Bu skript `backend/sql` ichidagi barcha migratsiyalarni (`001...005...`) ketma-ket ishlatadi.
 5. API ishga tushiring:
    - `npm --prefix backend run dev`
 
@@ -26,6 +26,9 @@
 - `GET /api/transactions/:id` (Bearer token)
 - `GET /api/payment-methods` (Bearer token)
 - `PATCH /api/payment-methods/:id/status` (Bearer token)
+- `GET /api/recipients/favorites` (Bearer token)
+- `POST /api/recipients/favorites` (Bearer token)
+- `DELETE /api/recipients/favorites/:id` (Bearer token)
 
 ## Security baseline
 - Helmet security headers

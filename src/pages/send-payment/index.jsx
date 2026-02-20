@@ -47,6 +47,8 @@ const WALLET_ICON = "https://img.rocket.new/generatedImages/rocket_gen_img_1b4fd
 const SendPayment = () => {
   const navigate = useNavigate();
   const [selectedRecipient, setSelectedRecipient] = useState(null);
+  const [favoriteRecipients, setFavoriteRecipients] = useState([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(true);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("UZS");
   const [selectedSource, setSelectedSource] = useState(null);
@@ -59,11 +61,16 @@ const SendPayment = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const loadSources = async () => {
+    const loadInitialData = async () => {
       setLoadingSources(true);
+      setLoadingRecipients(true);
       try {
-        const response = await apiClient.get("/wallet/overview", { params: { limit: 1 } });
-        const overview = response?.data?.data;
+        const [walletResponse, recipientResponse] = await Promise.all([
+          apiClient.get("/wallet/overview", { params: { limit: 1 } }),
+          apiClient.get("/recipients/favorites", { params: { limit: 20 } })
+        ]);
+
+        const overview = walletResponse?.data?.data;
         const balances = [...(overview?.traditionalBalances || []), ...(overview?.cryptoBalances || [])];
         const mapped = balances.map((item) => {
           const meta = CURRENCY_META[item.currency] || {
@@ -83,9 +90,17 @@ const SendPayment = () => {
             ...meta
           };
         });
+        const recipientRows = recipientResponse?.data?.data || [];
+        const mappedRecipients = recipientRows.map((row) => ({
+          id: row?.id,
+          name: row?.recipientName || row?.recipientIdentifier || "Recipient",
+          phone: row?.recipientIdentifier || "",
+          lastTransaction: row?.lastUsedAt || row?.createdAt || null
+        }));
 
         if (isMounted) {
           setPaymentSources(mapped);
+          setFavoriteRecipients(mappedRecipients);
         }
       } catch (error) {
         if (isMounted) {
@@ -97,11 +112,12 @@ const SendPayment = () => {
       } finally {
         if (isMounted) {
           setLoadingSources(false);
+          setLoadingRecipients(false);
         }
       }
     };
 
-    loadSources();
+    loadInitialData();
     return () => {
       isMounted = false;
     };
@@ -189,8 +205,39 @@ const SendPayment = () => {
     }
   };
 
-  const handleSaveRecipient = () => {
-    setErrors((prev) => ({ ...prev, submit: "Favorites API is not enabled yet." }));
+  const handleSaveRecipient = async () => {
+    const recipientIdentifier = (selectedRecipient?.phone || selectedRecipient?.name || "").trim();
+    const recipientName = (selectedRecipient?.name || "").trim();
+
+    if (!recipientIdentifier) {
+      setErrors((prev) => ({ ...prev, submit: "Recipient is required to save favorite." }));
+      return;
+    }
+
+    try {
+      const response = await apiClient.post("/recipients/favorites", {
+        recipientIdentifier,
+        recipientName: recipientName || recipientIdentifier
+      });
+      const saved = response?.data?.data;
+      const nextRecipient = {
+        id: saved?.id,
+        name: saved?.recipientName || saved?.recipientIdentifier || recipientIdentifier,
+        phone: saved?.recipientIdentifier || recipientIdentifier,
+        lastTransaction: saved?.lastUsedAt || saved?.createdAt || null
+      };
+
+      setFavoriteRecipients((prev) => {
+        const withoutSame = prev.filter((item) => item.phone !== nextRecipient.phone);
+        return [nextRecipient, ...withoutSame].slice(0, 20);
+      });
+      setErrors((prev) => ({ ...prev, submit: "" }));
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: error?.response?.data?.error || "Failed to save favorite recipient"
+      }));
+    }
   };
 
   return (
@@ -224,6 +271,8 @@ const SendPayment = () => {
                   selectedRecipient={selectedRecipient}
                   onRecipientSelect={setSelectedRecipient}
                   error={errors?.recipient}
+                  recipients={favoriteRecipients}
+                  isLoadingRecipients={loadingRecipients}
                 />
 
                 {selectedRecipient && (
