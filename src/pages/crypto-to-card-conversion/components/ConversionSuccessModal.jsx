@@ -1,6 +1,6 @@
-import React from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
 
 const ConversionSuccessModal = ({ isOpen, onClose, conversionDetails }) => {
   if (!isOpen) return null;
@@ -40,11 +40,13 @@ const ConversionSuccessModal = ({ isOpen, onClose, conversionDetails }) => {
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Transaction ID</span>
-              <span className="font-mono text-xs text-foreground">TXN{Date.now()?.toString()?.slice(-8)}</span>
+              <span className="font-mono text-xs text-foreground">
+                {conversionDetails?.transactionId || `TXN${Date.now()?.toString()?.slice(-8)}`}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Destination Card</span>
-              <span className="text-foreground">•••• {conversionDetails?.cardLastFour}</span>
+              <span className="text-foreground">**** {conversionDetails?.cardLastFour}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Processing Time</span>
@@ -54,21 +56,10 @@ const ConversionSuccessModal = ({ isOpen, onClose, conversionDetails }) => {
         </div>
 
         <div className="space-y-3">
-          <Button
-            variant="default"
-            fullWidth
-            onClick={onClose}
-            iconName="Home"
-            iconPosition="left"
-          >
+          <Button variant="default" fullWidth onClick={onClose} iconName="Home" iconPosition="left">
             Back to Dashboard
           </Button>
-          <Button
-            variant="outline"
-            fullWidth
-            iconName="Download"
-            iconPosition="left"
-          >
+          <Button variant="outline" fullWidth iconName="Download" iconPosition="left">
             Download Receipt
           </Button>
         </div>
@@ -76,7 +67,8 @@ const ConversionSuccessModal = ({ isOpen, onClose, conversionDetails }) => {
         <div className="mt-6 p-4 bg-accent/10 rounded-lg flex items-start gap-3">
           <Icon name="Bell" size={18} className="text-accent flex-shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            You'll receive a notification once the funds are available in your card. This typically takes {conversionDetails?.processingTime}.
+            You'll receive a notification once the funds are available in your card. This typically takes{" "}
+            {conversionDetails?.processingTime}.
           </p>
         </div>
       </div>
