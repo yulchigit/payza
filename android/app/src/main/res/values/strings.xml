@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PayZa</string>
+    <string name="title_activity_main">PayZa</string>
+    <string name="package_name">com.payza.app</string>
+    <string name="custom_url_scheme">com.payza.app</string>
+</resources>
