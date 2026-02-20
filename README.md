@@ -40,7 +40,7 @@ Root `.env` faylni repoga qo‘shmang. Namuna uchun `.env.example` bor.
 ## 3) Production deploy ketma-ketligi
 
 1. PostgreSQL production bazani tayyorlang.
-2. Backendni deploy qiling (Railway/Render/Fly/VM).
+2. Backendni deploy qiling (Railway/Render/Fly/VM yoki Docker).
 3. Backend envlarni kiriting:
    - `NODE_ENV=production`
    - `DATABASE_URL=...`
@@ -52,6 +52,20 @@ Root `.env` faylni repoga qo‘shmang. Namuna uchun `.env.example` bor.
 5. Vercel project envga kiriting:
    - `VITE_API_BASE_URL=https://your-backend-domain/api`
 6. Frontendni deploy qiling.
+
+### Docker orqali backend deploy (ixtiyoriy)
+```bash
+docker build -t payza-backend ./backend
+docker run --rm -p 5000:5000 \
+  -e NODE_ENV=production \
+  -e DATABASE_URL=... \
+  -e JWT_SECRET=... \
+  -e JWT_ISSUER=payza-api \
+  -e JWT_AUDIENCE=payza-clients \
+  -e CORS_ORIGINS=https://your-web-domain.com,capacitor://localhost \
+  -e RUN_MIGRATIONS=true \
+  payza-backend
+```
 
 ## 4) Android/iOS yangilanish oqimi
 

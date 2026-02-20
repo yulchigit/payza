@@ -34,3 +34,17 @@
 - Failed login lockout
 - Auth audit logs
 - Configurable CORS allowlist (`CORS_ORIGINS`)
+
+## Docker run
+```bash
+docker build -t payza-backend ./backend
+docker run --rm -p 5000:5000 \
+  -e NODE_ENV=production \
+  -e DATABASE_URL=... \
+  -e JWT_SECRET=... \
+  -e JWT_ISSUER=payza-api \
+  -e JWT_AUDIENCE=payza-clients \
+  -e CORS_ORIGINS=https://your-web-domain.com,capacitor://localhost \
+  -e RUN_MIGRATIONS=true \
+  payza-backend
+```
