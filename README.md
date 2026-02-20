@@ -15,6 +15,11 @@ npm install
 npm run start
 ```
 
+Frontend API base URL (example):
+```bash
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
 ## Build
 ```bash
 npm run build

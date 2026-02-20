@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { useAuth } from 'contexts/AuthContext';
 
 const RoleBasedNavigation = ({ userRole = 'user' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { logout, user } = useAuth();
 
   const userNavItems = [
   { label: 'Dashboard', path: '/user-wallet-dashboard', icon: 'LayoutDashboard' },
@@ -23,6 +25,12 @@ const RoleBasedNavigation = ({ userRole = 'user' }) => {
 
   const handleNavigation = (path) => {
     navigate(path);
+    setMobileMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login');
     setMobileMenuOpen(false);
   };
 
@@ -52,6 +60,9 @@ const RoleBasedNavigation = ({ userRole = 'user' }) => {
         </nav>
 
         <div className="nav-header-actions">
+          <span className="hidden md:inline text-sm text-muted-foreground">
+            {user?.fullName || user?.email || "Account"}
+          </span>
           <Button
             variant="ghost"
             size="icon"
@@ -60,11 +71,14 @@ const RoleBasedNavigation = ({ userRole = 'user' }) => {
             onClick={() => {}} />
 
           <Button
-            variant="ghost"
-            size="icon"
-            iconName="User"
-            iconSize={20}
-            onClick={() => {}} />
+            variant="outline"
+            size="sm"
+            iconName="LogOut"
+            iconPosition="left"
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
 
         </div>
       </header>
@@ -103,9 +117,9 @@ const RoleBasedNavigation = ({ userRole = 'user' }) => {
                 <Icon name="Bell" size={24} />
                 <span>Notifications</span>
               </button>
-              <button className="nav-mobile-item">
-                <Icon name="User" size={24} />
-                <span>Profile</span>
+              <button className="nav-mobile-item" onClick={handleLogout}>
+                <Icon name="LogOut" size={24} />
+                <span>Logout</span>
               </button>
             </div>
           </nav>
