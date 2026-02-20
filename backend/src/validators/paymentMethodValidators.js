@@ -7,6 +7,11 @@ const updatePaymentMethodSchema = z.object({
   walletAddress: z.string().optional()
 });
 
+const paymentMethodParamSchema = z.object({
+  id: z.string().uuid("Invalid payment method id")
+});
+
 module.exports = {
-  updatePaymentMethodSchema
+  updatePaymentMethodSchema,
+  paymentMethodParamSchema
 };

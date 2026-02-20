@@ -126,6 +126,22 @@ async function createTransaction({ userId, payload, idempotencyKey }) {
     };
   } catch (error) {
     await client.query("ROLLBACK");
+
+    if (idempotencyKey && error?.code === "23505") {
+      const existing = await findExistingByIdempotency({
+        db: pool,
+        userId,
+        idempotencyKey
+      });
+
+      if (existing) {
+        return {
+          transaction: mapTransactionRow(existing),
+          reused: true
+        };
+      }
+    }
+
     throw error;
   } finally {
     client.release();

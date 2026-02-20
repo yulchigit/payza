@@ -2,7 +2,10 @@ const express = require("express");
 const pool = require("../db/pool");
 const requireAuth = require("../middleware/auth");
 const asyncHandler = require("../utils/asyncHandler");
-const { updatePaymentMethodSchema } = require("../validators/paymentMethodValidators");
+const {
+  updatePaymentMethodSchema,
+  paymentMethodParamSchema
+} = require("../validators/paymentMethodValidators");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -29,7 +32,7 @@ router.patch(
   "/:id/status",
   asyncHandler(async (req, res) => {
     const payload = updatePaymentMethodSchema.parse(req.body);
-    const methodId = req.params.id;
+    const { id: methodId } = paymentMethodParamSchema.parse(req.params);
 
     const result = await pool.query(
       `SELECT id, user_id, category, status

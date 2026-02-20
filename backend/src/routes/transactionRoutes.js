@@ -3,7 +3,8 @@ const requireAuth = require("../middleware/auth");
 const asyncHandler = require("../utils/asyncHandler");
 const {
   createTransactionSchema,
-  transactionsQuerySchema
+  transactionsQuerySchema,
+  transactionIdParamSchema
 } = require("../validators/transactionValidators");
 const {
   createTransaction,
@@ -54,7 +55,8 @@ router.post(
 router.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const transaction = await getTransactionById(req.user.id, req.params.id);
+    const { id } = transactionIdParamSchema.parse(req.params);
+    const transaction = await getTransactionById(req.user.id, id);
     if (!transaction) {
       return res.status(404).json({
         success: false,

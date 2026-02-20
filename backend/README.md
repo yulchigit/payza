@@ -11,6 +11,7 @@
    - `npm --prefix backend install`
 4. Migratsiya ishlating:
    - `npm --prefix backend run migrate`
+   - Bu skript `backend/sql` ichidagi barcha migratsiyalarni (`001...004...`) ketma-ket ishlatadi.
 5. API ishga tushiring:
    - `npm --prefix backend run dev`
 
