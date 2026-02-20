@@ -3,75 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 import StatusIndicatorSystem from '../../../components/ui/StatusIndicatorSystem';
 
-const PaymentSourceSelector = ({ selectedSource, onSourceSelect, error }) => {
-  const paymentSources = [
-  {
-    id: 'uzcard-1',
-    type: 'card',
-    name: 'Uzcard',
-    number: '**** 4532',
-    balance: 2450000,
-    currency: 'UZS',
-    icon: "https://img.rocket.new/generatedImages/rocket_gen_img_1071d6dc0-1766732074521.png",
-    iconAlt: 'Blue and white credit card with chip showing modern banking design',
-    fee: '0%',
-    processingTime: 'Instant',
-    status: 'active'
-  },
-  {
-    id: 'humo-1',
-    type: 'card',
-    name: 'Humo',
-    number: '**** 7821',
-    balance: 1850000,
-    currency: 'UZS',
-    icon: "https://images.unsplash.com/photo-1640545232493-9a9b5c88ede4",
-    iconAlt: 'Green credit card with gold chip on dark surface representing secure payment',
-    fee: '0%',
-    processingTime: 'Instant',
-    status: 'active'
-  },
-  {
-    id: 'visa-1',
-    type: 'card',
-    name: 'Visa',
-    number: '**** 9234',
-    balance: 1250,
-    currency: 'USD',
-    icon: "https://img.rocket.new/generatedImages/rocket_gen_img_1c4fcaeb5-1767226452374.png",
-    iconAlt: 'Silver Visa credit card with holographic security features on white background',
-    fee: '2.5%',
-    processingTime: '1-2 business days',
-    status: 'active'
-  },
-  {
-    id: 'usdt-1',
-    type: 'crypto',
-    name: 'USDT Wallet',
-    address: '0x742d...3f4a',
-    balance: 3420.50,
-    currency: 'USDT',
-    icon: "https://images.unsplash.com/photo-1626163015484-81fc7e3b90d8",
-    iconAlt: 'Green Tether USDT cryptocurrency coin with T symbol on digital blockchain background',
-    fee: '1%',
-    processingTime: '5-10 minutes',
-    status: 'active'
-  },
-  {
-    id: 'btc-1',
-    type: 'crypto',
-    name: 'Bitcoin Wallet',
-    address: '1A1z...P1eP',
-    balance: 0.0845,
-    currency: 'BTC',
-    icon: "https://img.rocket.new/generatedImages/rocket_gen_img_1b4fd9e83-1765179231133.png",
-    iconAlt: 'Golden Bitcoin cryptocurrency coin with B symbol on dark metallic surface',
-    fee: '0.5%',
-    processingTime: '10-30 minutes',
-    status: 'active'
-  }];
-
-
+const PaymentSourceSelector = ({ selectedSource, onSourceSelect, error, paymentSources = [] }) => {
   const formatBalance = (balance, currency) => {
     if (currency === 'BTC') {
       return `${balance?.toFixed(8)} BTC`;
@@ -149,6 +81,11 @@ const PaymentSourceSelector = ({ selectedSource, onSourceSelect, error }) => {
           </button>
         )}
       </div>
+      {paymentSources?.length === 0 && (
+        <div className="border border-border rounded-lg p-4 text-sm text-muted-foreground bg-card">
+          No active wallets found. Add funds or create wallets first.
+        </div>
+      )}
       <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
         <Icon name="AlertCircle" size={16} className="text-warning flex-shrink-0 mt-0.5" />
         <p className="text-xs text-warning">

@@ -20,6 +20,7 @@
 - `GET /api/wallet/overview` (Bearer token required)
 - `GET /api/transactions` (Bearer token required)
 - `POST /api/transactions` (Bearer token required)
+- `GET /api/transactions/:id` (Bearer token required)
 
 ## Security baseline
 - Helmet security headers

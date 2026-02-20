@@ -5,7 +5,11 @@ const {
   createTransactionSchema,
   transactionsQuerySchema
 } = require("../validators/transactionValidators");
-const { createTransaction, listTransactions } = require("../services/transactionService");
+const {
+  createTransaction,
+  listTransactions,
+  getTransactionById
+} = require("../services/transactionService");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -43,6 +47,24 @@ router.post(
     return res.status(result.reused ? 200 : 201).json({
       success: true,
       data: result.transaction
+    });
+  })
+);
+
+router.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const transaction = await getTransactionById(req.user.id, req.params.id);
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        error: "Transaction not found"
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: transaction
     });
   })
 );

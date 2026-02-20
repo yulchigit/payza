@@ -1,45 +1,140 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
-import PaymentFlowBreadcrumb from '../../components/ui/PaymentFlowBreadcrumb';
-import RecipientSelector from './components/RecipientSelector';
-import AmountInput from './components/AmountInput';
-import PaymentSourceSelector from './components/PaymentSourceSelector';
-import TransactionSummary from './components/TransactionSummary';
-import SecurityVerification from './components/SecurityVerification';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Icon from "../../components/AppIcon";
+import Button from "../../components/ui/Button";
+import RoleBasedNavigation from "../../components/ui/RoleBasedNavigation";
+import PaymentFlowBreadcrumb from "../../components/ui/PaymentFlowBreadcrumb";
+import RecipientSelector from "./components/RecipientSelector";
+import AmountInput from "./components/AmountInput";
+import PaymentSourceSelector from "./components/PaymentSourceSelector";
+import TransactionSummary from "./components/TransactionSummary";
+import SecurityVerification from "./components/SecurityVerification";
+import apiClient from "lib/apiClient";
+
+const CURRENCY_META = {
+  UZS: {
+    type: "card",
+    name: "UZS Wallet",
+    number: "Domestic account",
+    processingTime: "Instant",
+    fee: "0.5%"
+  },
+  USD: {
+    type: "card",
+    name: "USD Wallet",
+    number: "International account",
+    processingTime: "Instant",
+    fee: "0.5%"
+  },
+  USDT: {
+    type: "crypto",
+    name: "USDT Wallet",
+    address: "TRC-20 wallet",
+    processingTime: "5-10 minutes",
+    fee: "1.0%"
+  },
+  BTC: {
+    type: "crypto",
+    name: "Bitcoin Wallet",
+    address: "Native SegWit wallet",
+    processingTime: "10-30 minutes",
+    fee: "1.0%"
+  }
+};
+
+const WALLET_ICON = "https://img.rocket.new/generatedImages/rocket_gen_img_1b4fd9e83-1765179231133.png";
 
 const SendPayment = () => {
   const navigate = useNavigate();
   const [selectedRecipient, setSelectedRecipient] = useState(null);
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('UZS');
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("UZS");
   const [selectedSource, setSelectedSource] = useState(null);
+  const [paymentSources, setPaymentSources] = useState([]);
+  const [loadingSources, setLoadingSources] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSources = async () => {
+      setLoadingSources(true);
+      try {
+        const response = await apiClient.get("/wallet/overview", { params: { limit: 1 } });
+        const overview = response?.data?.data;
+        const balances = [...(overview?.traditionalBalances || []), ...(overview?.cryptoBalances || [])];
+        const mapped = balances.map((item) => {
+          const meta = CURRENCY_META[item.currency] || {
+            type: "card",
+            name: `${item.currency} Wallet`,
+            number: "Wallet account",
+            processingTime: "Instant",
+            fee: "0.5%"
+          };
+          return {
+            id: `wallet-${item.currency}`,
+            currency: item.currency,
+            balance: Number(item.amount || 0),
+            status: "active",
+            icon: WALLET_ICON,
+            iconAlt: `${item.currency} wallet`,
+            ...meta
+          };
+        });
+
+        if (isMounted) {
+          setPaymentSources(mapped);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setErrors((prev) => ({
+            ...prev,
+            source: error?.response?.data?.error || "Failed to load payment sources"
+          }));
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingSources(false);
+        }
+      }
+    };
+
+    loadSources();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
 
     if (!selectedRecipient) {
-      newErrors.recipient = 'Please select or enter a recipient';
+      newErrors.recipient = "Please select or enter a recipient";
+    } else {
+      const recipientIdentifier = selectedRecipient?.phone || selectedRecipient?.name || "";
+      if (!recipientIdentifier.trim()) {
+        newErrors.recipient = "Recipient name or phone is required";
+      }
     }
 
-    if (!amount || parseFloat(amount) <= 0) {
-      newErrors.amount = 'Please enter a valid amount';
+    if (!amount || Number.parseFloat(amount) <= 0) {
+      newErrors.amount = "Please enter a valid amount";
     }
 
     if (!selectedSource) {
-      newErrors.source = 'Please select a payment source';
+      newErrors.source = "Please select a payment source";
     }
 
     if (selectedSource && amount) {
-      const sourceBalance = selectedSource?.balance;
-      const requiredAmount = parseFloat(amount);
-      
+      const sourceBalance = Number(selectedSource?.balance || 0);
+      const requiredAmount = Number.parseFloat(amount);
       if (requiredAmount > sourceBalance) {
-        newErrors.amount = 'Insufficient balance in selected payment source';
+        newErrors.amount = "Insufficient balance in selected payment source";
+      }
+      if (currency !== selectedSource.currency) {
+        newErrors.amount = `Currency must match selected source (${selectedSource.currency})`;
       }
     }
 
@@ -53,21 +148,49 @@ const SendPayment = () => {
     }
   };
 
-  const handleVerificationSuccess = () => {
-    setShowVerification(false);
-    navigate('/payment-confirmation', {
-      state: {
-        recipient: selectedRecipient,
-        amount,
-        currency,
-        paymentSource: selectedSource,
-        timestamp: new Date()?.toISOString()
-      }
-    });
+  const createIdempotencyKey = () => `payza-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  const handleVerificationSuccess = async () => {
+    const recipientIdentifier = selectedRecipient?.phone || selectedRecipient?.name || "";
+    setSubmitting(true);
+    setErrors((prev) => ({ ...prev, submit: "" }));
+
+    try {
+      const response = await apiClient.post(
+        "/transactions",
+        {
+          recipientIdentifier: recipientIdentifier.trim(),
+          sourceCurrency: selectedSource.currency,
+          amount: Number.parseFloat(amount)
+        },
+        {
+          headers: {
+            "Idempotency-Key": createIdempotencyKey()
+          }
+        }
+      );
+
+      const transaction = response?.data?.data;
+      setShowVerification(false);
+      navigate("/payment-confirmation", {
+        state: {
+          transaction,
+          recipient: selectedRecipient,
+          paymentSource: selectedSource
+        }
+      });
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: error?.response?.data?.error || "Failed to create transaction"
+      }));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSaveRecipient = () => {
-    alert('Recipient saved for future transactions');
+    setErrors((prev) => ({ ...prev, submit: "Favorites API is not enabled yet." }));
   };
 
   return (
@@ -78,9 +201,7 @@ const SendPayment = () => {
           <PaymentFlowBreadcrumb currentStep="send" />
 
           <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">
-              Send Payment
-            </h1>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">Send Payment</h1>
             <p className="text-sm md:text-base text-muted-foreground">
               Transfer money securely across cards and crypto wallets
             </p>
@@ -127,9 +248,23 @@ const SendPayment = () => {
 
                 <PaymentSourceSelector
                   selectedSource={selectedSource}
-                  onSourceSelect={setSelectedSource}
+                  onSourceSelect={(source) => {
+                    setSelectedSource(source);
+                    setCurrency(source.currency);
+                  }}
                   error={errors?.source}
+                  paymentSources={paymentSources}
                 />
+
+                {loadingSources && (
+                  <p className="text-sm text-muted-foreground">Loading available wallets...</p>
+                )}
+
+                {errors?.submit && (
+                  <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    {errors.submit}
+                  </p>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button
@@ -137,7 +272,7 @@ const SendPayment = () => {
                     fullWidth
                     iconName="ArrowLeft"
                     iconPosition="left"
-                    onClick={() => navigate('/user-wallet-dashboard')}
+                    onClick={() => navigate("/user-wallet-dashboard")}
                   >
                     Back to Dashboard
                   </Button>
@@ -147,7 +282,8 @@ const SendPayment = () => {
                     iconName="ArrowRight"
                     iconPosition="right"
                     onClick={handleContinue}
-                    disabled={!selectedRecipient || !amount || !selectedSource}
+                    disabled={!selectedRecipient || !amount || !selectedSource || submitting}
+                    loading={submitting}
                   >
                     Continue to Confirmation
                   </Button>
@@ -158,9 +294,7 @@ const SendPayment = () => {
                 <div className="flex items-start gap-3">
                   <Icon name="Shield" size={24} className="text-accent flex-shrink-0" />
                   <div>
-                    <h3 className="text-base font-semibold text-foreground mb-2">
-                      Secure Transaction Guarantee
-                    </h3>
+                    <h3 className="text-base font-semibold text-foreground mb-2">Secure Transaction Guarantee</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Icon name="Check" size={16} className="text-accent flex-shrink-0 mt-0.5" />
@@ -168,15 +302,11 @@ const SendPayment = () => {
                       </li>
                       <li className="flex items-start gap-2">
                         <Icon name="Check" size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                        <span>Two-factor authentication for all transactions</span>
+                        <span>Server-side validation is enabled for every transaction</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Icon name="Check" size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                        <span>Real-time fraud detection and prevention</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Icon name="Check" size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                        <span>24/7 customer support for transaction issues</span>
+                        <span>Rate-limited API protects against brute-force abuse</span>
                       </li>
                     </ul>
                   </div>
@@ -201,12 +331,7 @@ const SendPayment = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Our support team is available 24/7 to assist with your transactions.
                   </p>
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    iconName="MessageCircle"
-                    iconPosition="left"
-                  >
+                  <Button variant="outline" fullWidth iconName="MessageCircle" iconPosition="left">
                     Contact Support
                   </Button>
                 </div>

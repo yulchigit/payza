@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 const RecipientSelector = ({ selectedRecipient, onRecipientSelect, error }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [manualRecipient, setManualRecipient] = useState({ name: '', phone: '' });
 
   const recentRecipients = [
   {
@@ -54,8 +55,23 @@ const RecipientSelector = ({ selectedRecipient, onRecipientSelect, error }) => {
   };
 
   const handleManualEntry = () => {
-    onRecipientSelect({ id: 'manual', name: '', phone: '' });
+    const nextRecipient = { id: 'manual', name: '', phone: '' };
+    setManualRecipient({ name: '', phone: '' });
+    onRecipientSelect(nextRecipient);
     setShowDropdown(false);
+  };
+
+  useEffect(() => {
+    if (selectedRecipient?.id !== 'manual') {
+      setManualRecipient({ name: '', phone: '' });
+    }
+  }, [selectedRecipient]);
+
+  const handleManualChange = (field) => (event) => {
+    const value = event?.target?.value || '';
+    const next = { ...manualRecipient, [field]: value };
+    setManualRecipient(next);
+    onRecipientSelect({ id: 'manual', ...next });
   };
 
   return (
@@ -154,12 +170,16 @@ const RecipientSelector = ({ selectedRecipient, onRecipientSelect, error }) => {
           label="Recipient Name"
           type="text"
           placeholder="Enter recipient's full name"
+          value={manualRecipient?.name}
+          onChange={handleManualChange('name')}
           required />
 
           <Input
           label="Phone Number"
           type="tel"
           placeholder="+998 XX XXX XXXX"
+          value={manualRecipient?.phone}
+          onChange={handleManualChange('phone')}
           required />
 
         </div>

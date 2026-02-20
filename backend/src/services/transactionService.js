@@ -144,6 +144,18 @@ async function listTransactions(userId, limit) {
   return result.rows.map(mapTransactionRow);
 }
 
+async function getTransactionById(userId, transactionId) {
+  const result = await pool.query(
+    `SELECT id, recipient_identifier, source_currency, amount, fee_amount, net_amount, status, created_at
+     FROM transactions
+     WHERE sender_user_id = $1 AND id = $2
+     LIMIT 1`,
+    [userId, transactionId]
+  );
+
+  return result.rows[0] ? mapTransactionRow(result.rows[0]) : null;
+}
+
 function mapTransactionRow(row) {
   return {
     id: row.id,
@@ -159,5 +171,6 @@ function mapTransactionRow(row) {
 
 module.exports = {
   createTransaction,
-  listTransactions
+  listTransactions,
+  getTransactionById
 };
