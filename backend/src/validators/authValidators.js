@@ -1,0 +1,25 @@
+const { z } = require("zod");
+
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(72, "Password is too long")
+  .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+  .regex(/[a-z]/, "Password must include at least one lowercase letter")
+  .regex(/[0-9]/, "Password must include at least one number");
+
+const registerSchema = z.object({
+  fullName: z.string().min(2).max(100),
+  email: z.string().email().max(255).transform((value) => value.toLowerCase().trim()),
+  password: passwordSchema
+});
+
+const loginSchema = z.object({
+  email: z.string().email().max(255).transform((value) => value.toLowerCase().trim()),
+  password: z.string().min(1).max(72)
+});
+
+module.exports = {
+  registerSchema,
+  loginSchema
+};

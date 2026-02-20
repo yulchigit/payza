@@ -63,6 +63,9 @@
     "start": "vite",
     "build": "vite build --sourcemap",
     "serve": "vite preview",
+    "api:install": "npm --prefix backend install",
+    "api:dev": "npm --prefix backend run dev",
+    "api:start": "npm --prefix backend run start",
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
     "mobile:ios": "npm run mobile:sync && npx cap open ios"
