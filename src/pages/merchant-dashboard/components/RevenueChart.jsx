@@ -2,27 +2,29 @@ import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Button from '../../../components/ui/Button';
 
-const RevenueChart = () => {
+const FALLBACK_WEEKLY_DATA = [
+  { day: 'Mon', card: 4500000, visa: 2300000, crypto: 1800000 },
+  { day: 'Tue', card: 5200000, visa: 2800000, crypto: 2100000 },
+  { day: 'Wed', card: 4800000, visa: 2500000, crypto: 1900000 },
+  { day: 'Thu', card: 6100000, visa: 3200000, crypto: 2400000 },
+  { day: 'Fri', card: 7200000, visa: 3800000, crypto: 2900000 },
+  { day: 'Sat', card: 8500000, visa: 4200000, crypto: 3500000 },
+  { day: 'Sun', card: 6800000, visa: 3500000, crypto: 2700000 }
+];
+
+const FALLBACK_MONTHLY_DATA = [
+  { week: 'Week 1', card: 28000000, visa: 15000000, crypto: 12000000 },
+  { week: 'Week 2', card: 32000000, visa: 17000000, crypto: 14000000 },
+  { week: 'Week 3', card: 35000000, visa: 19000000, crypto: 15000000 },
+  { week: 'Week 4', card: 38000000, visa: 21000000, crypto: 17000000 }
+];
+
+const RevenueChart = ({ weeklyData = [], monthlyData = [] }) => {
   const [timeFilter, setTimeFilter] = useState('weekly');
 
-  const weeklyData = [
-    { day: 'Mon', card: 4500000, visa: 2300000, crypto: 1800000 },
-    { day: 'Tue', card: 5200000, visa: 2800000, crypto: 2100000 },
-    { day: 'Wed', card: 4800000, visa: 2500000, crypto: 1900000 },
-    { day: 'Thu', card: 6100000, visa: 3200000, crypto: 2400000 },
-    { day: 'Fri', card: 7200000, visa: 3800000, crypto: 2900000 },
-    { day: 'Sat', card: 8500000, visa: 4200000, crypto: 3500000 },
-    { day: 'Sun', card: 6800000, visa: 3500000, crypto: 2700000 }
-  ];
-
-  const monthlyData = [
-    { week: 'Week 1', card: 28000000, visa: 15000000, crypto: 12000000 },
-    { week: 'Week 2', card: 32000000, visa: 17000000, crypto: 14000000 },
-    { week: 'Week 3', card: 35000000, visa: 19000000, crypto: 15000000 },
-    { week: 'Week 4', card: 38000000, visa: 21000000, crypto: 17000000 }
-  ];
-
-  const data = timeFilter === 'weekly' ? weeklyData : monthlyData;
+  const safeWeeklyData = weeklyData.length > 0 ? weeklyData : FALLBACK_WEEKLY_DATA;
+  const safeMonthlyData = monthlyData.length > 0 ? monthlyData : FALLBACK_MONTHLY_DATA;
+  const data = timeFilter === 'weekly' ? safeWeeklyData : safeMonthlyData;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload?.length) {

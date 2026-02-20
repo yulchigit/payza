@@ -12,6 +12,10 @@ const MetricCard = ({
   iconColor = 'var(--color-primary)'
 }) => {
   const formatValue = (val) => {
+    if (currency === 'COUNT') {
+      return new Intl.NumberFormat('en-US')?.format(val);
+    }
+
     if (currency === 'UZS') {
       return new Intl.NumberFormat('en-US')?.format(val);
     }
@@ -43,6 +47,7 @@ const MetricCard = ({
       <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
         {formatValue(value)}
         {currency === 'UZS' && <span className="text-lg md:text-xl lg:text-2xl ml-2 text-muted-foreground">UZS</span>}
+        {currency === 'COUNT' && <span className="text-base md:text-lg ml-2 text-muted-foreground">tx</span>}
       </p>
     </div>
   );

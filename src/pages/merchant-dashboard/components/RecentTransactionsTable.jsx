@@ -1,122 +1,61 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import StatusIndicatorSystem from '../../../components/ui/StatusIndicatorSystem';
 import Button from '../../../components/ui/Button';
 
-const RecentTransactionsTable = () => {
+const FALLBACK_TRANSACTIONS = [
+  {
+    id: 'TXN-2026-001',
+    date: '2026-01-06',
+    time: '14:32',
+    customer: 'Alisher Karimov',
+    amount: 450000,
+    currency: 'UZS',
+    type: 'Card Payment',
+    typeIcon: 'CreditCard',
+    status: 'success',
+    paymentMethod: 'Uzcard **** 4521'
+  }
+];
+
+const CRYPTO_CURRENCIES = new Set(['USDT', 'BTC', 'ETH']);
+const STATUSES = new Set(['success', 'warning', 'error', 'pending', 'active', 'inactive', 'processing']);
+
+const formatAmount = (amount, currency) => {
+  const numericAmount = Number(amount || 0);
+  if (currency === 'UZS') {
+    return `${new Intl.NumberFormat('en-US')?.format(numericAmount)} UZS`;
+  }
+  if (currency === 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numericAmount);
+  }
+
+  if (CRYPTO_CURRENCIES.has(currency)) {
+    const precision = currency === 'USDT' ? 2 : 8;
+    return `${numericAmount.toFixed(precision)} ${currency}`;
+  }
+
+  return `${new Intl.NumberFormat('en-US')?.format(numericAmount)} ${currency}`;
+};
+
+const RecentTransactionsTable = ({ transactions = [] }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const transactions = [
-    {
-      id: 'TXN-2026-001',
-      date: '2026-01-06',
-      time: '14:32',
-      customer: 'Alisher Karimov',
-      amount: 450000,
-      currency: 'UZS',
-      type: 'Card Payment',
-      typeIcon: 'CreditCard',
-      status: 'success',
-      paymentMethod: 'Uzcard •••• 4521'
-    },
-    {
-      id: 'TXN-2026-002',
-      date: '2026-01-06',
-      time: '13:15',
-      customer: 'Dilshod Rahimov',
-      amount: 1250000,
-      currency: 'UZS',
-      type: 'Visa Payment',
-      typeIcon: 'Globe',
-      status: 'success',
-      paymentMethod: 'Visa •••• 8932'
-    },
-    {
-      id: 'TXN-2026-003',
-      date: '2026-01-06',
-      time: '12:48',
-      customer: 'Nodira Azimova',
-      amount: 320,
-      currency: 'USDT',
-      type: 'Crypto Payment',
-      typeIcon: 'Bitcoin',
-      status: 'success',
-      paymentMethod: 'USDT Wallet'
-    },
-    {
-      id: 'TXN-2026-004',
-      date: '2026-01-06',
-      time: '11:22',
-      customer: 'Rustam Tursunov',
-      amount: 780000,
-      currency: 'UZS',
-      type: 'Card Payment',
-      typeIcon: 'CreditCard',
-      status: 'processing',
-      paymentMethod: 'Humo •••• 7654'
-    },
-    {
-      id: 'TXN-2026-005',
-      date: '2026-01-06',
-      time: '10:55',
-      customer: 'Malika Sharipova',
-      amount: 2100000,
-      currency: 'UZS',
-      type: 'Visa Payment',
-      typeIcon: 'Globe',
-      status: 'success',
-      paymentMethod: 'Visa •••• 3421'
-    },
-    {
-      id: 'TXN-2026-006',
-      date: '2026-01-06',
-      time: '09:30',
-      customer: 'Jamshid Umarov',
-      amount: 150,
-      currency: 'USDT',
-      type: 'Crypto Payment',
-      typeIcon: 'Bitcoin',
-      status: 'success',
-      paymentMethod: 'USDT Wallet'
-    },
-    {
-      id: 'TXN-2026-007',
-      date: '2026-01-05',
-      time: '18:45',
-      customer: 'Sevara Abdullayeva',
-      amount: 920000,
-      currency: 'UZS',
-      type: 'Card Payment',
-      typeIcon: 'CreditCard',
-      status: 'success',
-      paymentMethod: 'Uzcard •••• 9876'
-    },
-    {
-      id: 'TXN-2026-008',
-      date: '2026-01-05',
-      time: '17:20',
-      customer: 'Bobur Yusupov',
-      amount: 1850000,
-      currency: 'UZS',
-      type: 'Visa Payment',
-      typeIcon: 'Globe',
-      status: 'error',
-      paymentMethod: 'Visa •••• 5432'
-    }
-  ];
+  const safeTransactions = useMemo(
+    () => (transactions.length > 0 ? transactions : FALLBACK_TRANSACTIONS),
+    [transactions]
+  );
 
-  const totalPages = Math.ceil(transactions?.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(safeTransactions?.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTransactions = transactions?.slice(startIndex, endIndex);
-
-  const formatAmount = (amount, currency) => {
-    if (currency === 'UZS') {
-      return `${new Intl.NumberFormat('en-US')?.format(amount)} UZS`;
-    }
-    return `${amount} ${currency}`;
-  };
+  const currentTransactions = safeTransactions?.slice(startIndex, endIndex);
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -125,12 +64,11 @@ const RecentTransactionsTable = () => {
           <h3 className="text-lg md:text-xl font-bold text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
             Recent Transactions
           </h3>
-          <Button variant="outline" size="sm" iconName="Download" iconPosition="left">
+          <Button variant="outline" size="sm" iconName="Download" iconPosition="left" disabled>
             Export
           </Button>
         </div>
       </div>
-      {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-muted">
@@ -183,14 +121,15 @@ const RecentTransactionsTable = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <StatusIndicatorSystem status={transaction?.status} />
+                  <StatusIndicatorSystem
+                    status={STATUSES.has(transaction?.status) ? transaction?.status : 'pending'}
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {/* Mobile Card View */}
       <div className="lg:hidden divide-y divide-border">
         {currentTransactions?.map((transaction) => (
           <div key={transaction?.id} className="p-4 hover:bg-muted/50 transition-colors duration-250">
@@ -203,7 +142,10 @@ const RecentTransactionsTable = () => {
                   {transaction?.date} at {transaction?.time}
                 </p>
               </div>
-              <StatusIndicatorSystem status={transaction?.status} size="small" />
+              <StatusIndicatorSystem
+                status={STATUSES.has(transaction?.status) ? transaction?.status : 'pending'}
+                size="small"
+              />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -231,10 +173,10 @@ const RecentTransactionsTable = () => {
           </div>
         ))}
       </div>
-      {/* Pagination */}
       <div className="p-4 md:p-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground">
-          Showing {startIndex + 1} to {Math.min(endIndex, transactions?.length)} of {transactions?.length} transactions
+          Showing {startIndex + 1} to {Math.min(endIndex, safeTransactions?.length)} of {safeTransactions?.length}{' '}
+          transactions
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -242,7 +184,7 @@ const RecentTransactionsTable = () => {
             size="sm"
             iconName="ChevronLeft"
             disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
           />
           {Array.from({ length: totalPages }, (_, i) => i + 1)?.map((page) => (
             <Button
@@ -259,7 +201,7 @@ const RecentTransactionsTable = () => {
             size="sm"
             iconName="ChevronRight"
             disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
           />
         </div>
       </div>
