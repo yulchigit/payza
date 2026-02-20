@@ -21,6 +21,8 @@
 - `GET /api/transactions` (Bearer token required)
 - `POST /api/transactions` (Bearer token required)
 - `GET /api/transactions/:id` (Bearer token required)
+- `GET /api/payment-methods` (Bearer token required)
+- `PATCH /api/payment-methods/:id/status` (Bearer token required)
 
 ## Security baseline
 - Helmet security headers

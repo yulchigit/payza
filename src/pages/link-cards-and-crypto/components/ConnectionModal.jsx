@@ -8,8 +8,7 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
     cardNumber: '',
     expiryDate: '',
     cvv: '',
-    walletAddress: '',
-    privateKey: ''
+    walletAddress: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -23,18 +22,18 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
   const handleSubmit = async (e) => {
     e?.preventDefault();
     setLoading(true);
-    
-    setTimeout(() => {
-      onSubmit(method, formData);
+
+    try {
+      await onSubmit(method, formData);
+    } finally {
       setLoading(false);
       setFormData({
         cardNumber: '',
         expiryDate: '',
         cvv: '',
-        walletAddress: '',
-        privateKey: ''
+        walletAddress: ''
       });
-    }, 1500);
+    }
   };
 
   const isTraditionalCard = method?.category === 'traditional';
@@ -73,7 +72,7 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
                 Are you sure you want to disconnect {method?.name}? You won't be able to use this payment method until you reconnect it.
               </p>
               <div className="flex gap-3">
-                <Button variant="outline" fullWidth onClick={onClose}>
+                <Button variant="outline" fullWidth onClick={onClose} type="button">
                   Cancel
                 </Button>
                 <Button variant="destructive" fullWidth loading={loading} type="submit">
@@ -108,9 +107,9 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
                     />
                     <Input
                       label="CVV"
-                      type="text"
+                      type="password"
                       name="cvv"
-                      placeholder="123"
+                      placeholder="***"
                       value={formData?.cvv}
                       onChange={handleChange}
                       required
@@ -130,16 +129,6 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
                     className="mb-4"
                     description="Your cryptocurrency wallet address"
                   />
-                  <Input
-                    label="Private Key (Optional)"
-                    type="password"
-                    name="privateKey"
-                    placeholder="Enter private key for full access"
-                    value={formData?.privateKey}
-                    onChange={handleChange}
-                    className="mb-4"
-                    description="Required for sending transactions"
-                  />
                 </>
               )}
 
@@ -151,14 +140,14 @@ const ConnectionModal = ({ isOpen, onClose, method, onSubmit, actionType }) => {
                       Secure Connection
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Your payment information is encrypted and stored securely. We never share your data with third parties.
+                      We never ask for your wallet private key. Sensitive card data is not persisted on the client.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" fullWidth onClick={onClose}>
+                <Button variant="outline" fullWidth onClick={onClose} type="button">
                   Cancel
                 </Button>
                 <Button variant="default" fullWidth loading={loading} type="submit">
