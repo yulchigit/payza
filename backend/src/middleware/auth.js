@@ -13,7 +13,11 @@ module.exports = function requireAuth(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret);
+    const payload = jwt.verify(token, env.jwtSecret, {
+      algorithms: ["HS256"],
+      issuer: env.jwtIssuer,
+      audience: env.jwtAudience
+    });
     req.user = {
       id: payload.sub,
       email: payload.email

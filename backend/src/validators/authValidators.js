@@ -6,10 +6,16 @@ const passwordSchema = z
   .max(72, "Password is too long")
   .regex(/[A-Z]/, "Password must include at least one uppercase letter")
   .regex(/[a-z]/, "Password must include at least one lowercase letter")
-  .regex(/[0-9]/, "Password must include at least one number");
+  .regex(/[0-9]/, "Password must include at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must include at least one symbol");
 
 const registerSchema = z.object({
-  fullName: z.string().min(2).max(100),
+  fullName: z
+    .string()
+    .trim()
+    .min(2)
+    .max(100)
+    .regex(/^[\p{L}\p{M}\s.'-]+$/u, "Full name contains invalid characters"),
   email: z.string().email().max(255).transform((value) => value.toLowerCase().trim()),
   password: passwordSchema
 });

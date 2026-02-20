@@ -6,12 +6,19 @@ const env = require("./config/env");
 const healthRoutes = require("./routes/healthRoutes");
 const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const { apiLimiter } = require("./middleware/rateLimiters");
 
 const app = express();
 
 app.disable("x-powered-by");
-app.use(helmet());
+app.set("trust proxy", 1);
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+);
 app.use(express.json({ limit: "100kb" }));
+app.use(apiLimiter);
 app.use(
   cors({
     origin(origin, callback) {

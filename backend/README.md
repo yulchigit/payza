@@ -7,6 +7,7 @@
    - `npm --prefix backend install`
 4. Run SQL schema:
    - execute `backend/sql/001_init.sql` on your PostgreSQL database
+   - execute `backend/sql/002_security_hardening.sql` on your PostgreSQL database
 5. Start API:
    - `npm --prefix backend run dev`
 
@@ -15,3 +16,11 @@
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me` (Bearer token required)
+
+## Security baseline
+- Helmet security headers
+- Global and auth-specific rate limiting
+- Strong password policy
+- JWT issuer/audience validation
+- Login brute-force lockout
+- Auth audit logs in database

@@ -4,17 +4,39 @@ const jwt = require("jsonwebtoken");
 const pool = require("../db/pool");
 const env = require("../config/env");
 const asyncHandler = require("../utils/asyncHandler");
+const delay = require("../utils/delay");
 const { loginSchema, registerSchema } = require("../validators/authValidators");
-const { createUser, findUserByEmail } = require("../services/userService");
+const {
+  createUser,
+  findUserByEmail,
+  recordFailedLoginAttempt,
+  clearLoginSecurityState,
+  createAuthAuditLog
+} = require("../services/userService");
 const { authLimiter } = require("../middleware/rateLimiters");
 const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
+router.use((req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
+const getClientIp = (req) => {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
+    return forwardedFor.split(",")[0].trim();
+  }
+  return req.ip || null;
+};
 
 const signAccessToken = (user) =>
   jwt.sign({ email: user.email }, env.jwtSecret, {
     subject: user.id,
-    expiresIn: env.jwtExpiresIn
+    expiresIn: env.jwtExpiresIn,
+    issuer: env.jwtIssuer,
+    audience: env.jwtAudience,
+    algorithm: "HS256"
   });
 
 router.post(
@@ -22,16 +44,28 @@ router.post(
   authLimiter,
   asyncHandler(async (req, res) => {
     const payload = registerSchema.parse(req.body);
+    const clientIp = getClientIp(req);
+    const userAgent = req.get("user-agent") || null;
     const existing = await findUserByEmail(payload.email);
 
     if (existing) {
+      await createAuthAuditLog({
+        userId: existing.id,
+        email: payload.email,
+        eventType: "register",
+        isSuccess: false,
+        failureReason: "email_exists",
+        ipAddress: clientIp,
+        userAgent
+      });
+
       return res.status(409).json({
         success: false,
         error: "Email already registered"
       });
     }
 
-    const passwordHash = await bcrypt.hash(payload.password, 12);
+    const passwordHash = await bcrypt.hash(payload.password, env.bcryptRounds);
     const user = await createUser({
       fullName: payload.fullName,
       email: payload.email,
@@ -46,6 +80,15 @@ router.post(
     );
 
     const token = signAccessToken({ id: user.id, email: user.email });
+
+    await createAuthAuditLog({
+      userId: user.id,
+      email: user.email,
+      eventType: "register",
+      isSuccess: true,
+      ipAddress: clientIp,
+      userAgent
+    });
 
     return res.status(201).json({
       success: true,
@@ -67,24 +110,76 @@ router.post(
   authLimiter,
   asyncHandler(async (req, res) => {
     const payload = loginSchema.parse(req.body);
+    const clientIp = getClientIp(req);
+    const userAgent = req.get("user-agent") || null;
     const user = await findUserByEmail(payload.email);
 
     if (!user) {
+      await createAuthAuditLog({
+        userId: null,
+        email: payload.email,
+        eventType: "login",
+        isSuccess: false,
+        failureReason: "invalid_credentials",
+        ipAddress: clientIp,
+        userAgent
+      });
+      await delay(400);
       return res.status(401).json({
         success: false,
         error: "Invalid email or password"
+      });
+    }
+
+    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      await createAuthAuditLog({
+        userId: user.id,
+        email: user.email,
+        eventType: "login",
+        isSuccess: false,
+        failureReason: "account_locked",
+        ipAddress: clientIp,
+        userAgent
+      });
+      return res.status(423).json({
+        success: false,
+        error: "Account is temporarily locked. Try again later."
       });
     }
 
     const isPasswordValid = await bcrypt.compare(payload.password, user.password_hash);
     if (!isPasswordValid) {
+      await recordFailedLoginAttempt({
+        userId: user.id,
+        maxAttempts: env.authMaxFailedAttempts,
+        lockMinutes: env.authLockMinutes
+      });
+      await createAuthAuditLog({
+        userId: user.id,
+        email: user.email,
+        eventType: "login",
+        isSuccess: false,
+        failureReason: "invalid_credentials",
+        ipAddress: clientIp,
+        userAgent
+      });
+      await delay(400);
       return res.status(401).json({
         success: false,
         error: "Invalid email or password"
       });
     }
 
+    await clearLoginSecurityState(user.id);
     const token = signAccessToken({ id: user.id, email: user.email });
+    await createAuthAuditLog({
+      userId: user.id,
+      email: user.email,
+      eventType: "login",
+      isSuccess: true,
+      ipAddress: clientIp,
+      userAgent
+    });
 
     return res.json({
       success: true,
