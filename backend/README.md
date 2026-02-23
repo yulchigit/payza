@@ -14,6 +14,8 @@
    - Bu skript `backend/sql` ichidagi barcha migratsiyalarni (`001...005...`) ketma-ket ishlatadi.
 5. API ishga tushiring:
    - `npm --prefix backend run dev`
+6. Test ishga tushiring:
+   - `npm --prefix backend test`
 
 ## Endpoints
 - `GET /api/health`

@@ -17,6 +17,10 @@
     `limit`, `offset`, `status`, `sourceCurrency`, `search`, `from`, `to`.
   - Added server-side pagination metadata: `total`, `limit`, `offset`, `hasMore`.
   - Merchant dashboard table now uses server-side filter/search/pagination.
+- Added backend security validation tests (`node:test`) for:
+  - auth validators
+  - recipient validators
+  - transaction validators
 
 ## Verification done
 - DB migrations run successfully through `005`.
