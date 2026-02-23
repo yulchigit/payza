@@ -8,7 +8,9 @@ const RecipientSelector = ({
   onRecipientSelect,
   error,
   recipients = [],
-  isLoadingRecipients = false
+  isLoadingRecipients = false,
+  onDeleteRecipient = null,
+  deletingRecipientIds = []
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -88,20 +90,32 @@ const RecipientSelector = ({
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground px-3 py-2">Saved Recipients</p>
                   {filteredRecipients?.map((recipient) => (
-                    <button
-                      key={recipient?.id}
-                      onClick={() => handleRecipientClick(recipient)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <Icon name="User" size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{recipient?.name}</p>
-                        <p className="text-xs text-muted-foreground">{recipient?.phone}</p>
-                      </div>
-                      <Icon name="ChevronRight" size={16} className="text-muted-foreground flex-shrink-0" />
-                    </button>
+                    <div key={recipient?.id} className="w-full flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRecipientClick(recipient)}
+                        className="flex-1 flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <Icon name="User" size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{recipient?.name}</p>
+                          <p className="text-xs text-muted-foreground">{recipient?.phone}</p>
+                        </div>
+                        <Icon name="ChevronRight" size={16} className="text-muted-foreground flex-shrink-0" />
+                      </button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        iconName="Trash2"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => onDeleteRecipient?.(recipient)}
+                        loading={deletingRecipientIds.includes(recipient?.id)}
+                        disabled={deletingRecipientIds.includes(recipient?.id)}
+                      />
+                    </div>
                   ))}
                 </div>
               ) : (

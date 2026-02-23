@@ -11,6 +11,7 @@
   - `send-payment` now loads favorite recipients from API.
   - "Save as Favorite" now calls backend API (no longer demo message).
   - Recipient selector UI now uses real favorites and manual entry.
+  - Favorite recipient delete action added in UI (`DELETE /api/recipients/favorites/:id`).
 
 ## Verification done
 - DB migrations run successfully through `005`.
@@ -21,6 +22,5 @@
   - list favorite recipients (`count=1`)
 
 ## Next step when continuing
-1. Add favorite recipient delete action in UI.
-2. Add transaction history filters/search with backend query params.
-3. Prepare production deploy execution (backend hosting + Vercel env + Android sync/rebuild).
+1. Add transaction history filters/search with backend query params.
+2. Prepare production deploy execution (backend hosting + Vercel env + Android sync/rebuild).

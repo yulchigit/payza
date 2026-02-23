@@ -49,6 +49,7 @@ const SendPayment = () => {
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [favoriteRecipients, setFavoriteRecipients] = useState([]);
   const [loadingRecipients, setLoadingRecipients] = useState(true);
+  const [deletingRecipientIds, setDeletingRecipientIds] = useState([]);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("UZS");
   const [selectedSource, setSelectedSource] = useState(null);
@@ -240,6 +241,30 @@ const SendPayment = () => {
     }
   };
 
+  const handleDeleteFavoriteRecipient = async (recipient) => {
+    const favoriteId = recipient?.id;
+    if (!favoriteId || favoriteId === "manual") {
+      return;
+    }
+
+    setDeletingRecipientIds((prev) => (prev.includes(favoriteId) ? prev : [...prev, favoriteId]));
+    try {
+      await apiClient.delete(`/recipients/favorites/${favoriteId}`);
+      setFavoriteRecipients((prev) => prev.filter((item) => item.id !== favoriteId));
+      if (selectedRecipient?.id === favoriteId) {
+        setSelectedRecipient(null);
+      }
+      setErrors((prev) => ({ ...prev, submit: "" }));
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: error?.response?.data?.error || "Failed to delete favorite recipient"
+      }));
+    } finally {
+      setDeletingRecipientIds((prev) => prev.filter((id) => id !== favoriteId));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole="user" />
@@ -273,6 +298,8 @@ const SendPayment = () => {
                   error={errors?.recipient}
                   recipients={favoriteRecipients}
                   isLoadingRecipients={loadingRecipients}
+                  onDeleteRecipient={handleDeleteFavoriteRecipient}
+                  deletingRecipientIds={deletingRecipientIds}
                 />
 
                 {selectedRecipient && (
