@@ -28,6 +28,7 @@
 2. Select this repo and set service root directory to `backend`.
 3. Add `PostgreSQL` service in same Railway project.
 4. In backend service Variables, use `backend/.env.railway.staging.example` as template.
+   - Do not set a fixed `PORT` for Railway. Railway injects `PORT` automatically.
 5. Generate JWT secret locally:
    - `npm run release:secret`
 6. For first deploy keep `RUN_MIGRATIONS=true`.

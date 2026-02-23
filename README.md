@@ -100,6 +100,7 @@ Backend tests now cover:
 
 Railway staging env template:
 - `backend/.env.railway.staging.example`
+- Railway'da `PORT` ni qo'lda fixed qilmang (platform o'zi beradi).
 
 ## Production Deploy Order
 
