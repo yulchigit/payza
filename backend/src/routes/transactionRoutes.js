@@ -19,10 +19,11 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const query = transactionsQuerySchema.parse(req.query);
-    const transactions = await listTransactions(req.user.id, query.limit);
+    const result = await listTransactions(req.user.id, query);
     return res.json({
       success: true,
-      data: transactions
+      data: result.transactions,
+      meta: result.meta
     });
   })
 );

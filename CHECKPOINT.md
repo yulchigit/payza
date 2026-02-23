@@ -12,6 +12,11 @@
   - "Save as Favorite" now calls backend API (no longer demo message).
   - Recipient selector UI now uses real favorites and manual entry.
   - Favorite recipient delete action added in UI (`DELETE /api/recipients/favorites/:id`).
+- Transactions:
+  - Backend `/api/transactions` now supports secure query filters:
+    `limit`, `offset`, `status`, `sourceCurrency`, `search`, `from`, `to`.
+  - Added server-side pagination metadata: `total`, `limit`, `offset`, `hasMore`.
+  - Merchant dashboard table now uses server-side filter/search/pagination.
 
 ## Verification done
 - DB migrations run successfully through `005`.
@@ -22,5 +27,5 @@
   - list favorite recipients (`count=1`)
 
 ## Next step when continuing
-1. Add transaction history filters/search with backend query params.
-2. Prepare production deploy execution (backend hosting + Vercel env + Android sync/rebuild).
+1. Prepare production deploy execution (backend hosting + Vercel env + Android sync/rebuild).
+2. Add automated API tests for auth/transactions/recipients flows.

@@ -5,6 +5,61 @@ const parseAmount = (value) => Number.parseFloat(value || 0);
 
 const calculateFeeRate = (currency) => (isCryptoCurrency(currency) ? 0.01 : 0.005);
 
+const escapeLikePattern = (value) =>
+  String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
+
+const buildUtcStartOfDay = (dateYmd) => `${dateYmd}T00:00:00.000Z`;
+
+const buildUtcStartOfNextDay = (dateYmd) => {
+  const [year, month, day] = String(dateYmd).split("-").map((part) => Number.parseInt(part, 10));
+  const nextDay = new Date(Date.UTC(year, month - 1, day + 1));
+  return nextDay.toISOString();
+};
+
+function buildTransactionsFilterQuery({ userId, query }) {
+  const conditions = ["sender_user_id = $1"];
+  const values = [userId];
+  let index = 2;
+
+  if (query.status) {
+    conditions.push(`status = $${index}`);
+    values.push(query.status);
+    index += 1;
+  }
+
+  if (query.sourceCurrency) {
+    conditions.push(`source_currency = $${index}`);
+    values.push(query.sourceCurrency);
+    index += 1;
+  }
+
+  if (query.search) {
+    conditions.push(`recipient_identifier ILIKE $${index} ESCAPE '\\'`);
+    values.push(`%${escapeLikePattern(query.search)}%`);
+    index += 1;
+  }
+
+  if (query.from) {
+    conditions.push(`created_at >= $${index}`);
+    values.push(buildUtcStartOfDay(query.from));
+    index += 1;
+  }
+
+  if (query.to) {
+    conditions.push(`created_at < $${index}`);
+    values.push(buildUtcStartOfNextDay(query.to));
+    index += 1;
+  }
+
+  return {
+    whereClause: conditions.join(" AND "),
+    values
+  };
+}
+
 async function findExistingByIdempotency({ db, userId, idempotencyKey }) {
   if (!idempotencyKey) return null;
   const result = await db.query(
@@ -148,16 +203,42 @@ async function createTransaction({ userId, payload, idempotencyKey }) {
   }
 }
 
-async function listTransactions(userId, limit) {
-  const result = await pool.query(
+async function listTransactions(userId, query) {
+  const { whereClause, values } = buildTransactionsFilterQuery({
+    userId,
+    query
+  });
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*)::int AS total
+     FROM transactions
+     WHERE ${whereClause}`,
+    values
+  );
+
+  const total = countResult.rows[0]?.total || 0;
+  const limitIndex = values.length + 1;
+  const offsetIndex = values.length + 2;
+
+  const rowsResult = await pool.query(
     `SELECT id, recipient_identifier, source_currency, amount, fee_amount, net_amount, status, created_at
      FROM transactions
-     WHERE sender_user_id = $1
-     ORDER BY created_at DESC
-     LIMIT $2`,
-    [userId, limit]
+     WHERE ${whereClause}
+     ORDER BY created_at DESC, id DESC
+     LIMIT $${limitIndex}
+     OFFSET $${offsetIndex}`,
+    [...values, query.limit, query.offset]
   );
-  return result.rows.map(mapTransactionRow);
+
+  return {
+    transactions: rowsResult.rows.map(mapTransactionRow),
+    meta: {
+      total,
+      limit: query.limit,
+      offset: query.offset,
+      hasMore: query.offset + query.limit < total
+    }
+  };
 }
 
 async function getTransactionById(userId, transactionId) {

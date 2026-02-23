@@ -22,6 +22,7 @@
 - `GET /api/auth/me` (Bearer token)
 - `GET /api/wallet/overview` (Bearer token)
 - `GET /api/transactions` (Bearer token)
+  - Query: `limit`, `offset`, `status`, `sourceCurrency`, `search`, `from`, `to`
 - `POST /api/transactions` (Bearer token)
 - `GET /api/transactions/:id` (Bearer token)
 - `GET /api/payment-methods` (Bearer token)

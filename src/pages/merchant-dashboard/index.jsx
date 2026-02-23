@@ -143,11 +143,57 @@ const mapTxStatus = (status) => {
   return 'pending';
 };
 
+const TABLE_PAGE_SIZE = 10;
+const DEFAULT_TABLE_FILTERS = {
+  search: '',
+  status: '',
+  sourceCurrency: '',
+  from: '',
+  to: ''
+};
+
+const dateFormatter = new Intl.DateTimeFormat('en-CA');
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+});
+
+const mapTransactionForTable = (tx) => {
+  const bucketMeta = PAYMENT_BUCKETS[bucketByCurrency(String(tx?.sourceCurrency || 'USD').toUpperCase())];
+  const createdAtDate = new Date(tx?.createdAt);
+
+  return {
+    id: `TXN-${String(tx?.id || '').slice(0, 8).toUpperCase()}`,
+    date: Number.isNaN(createdAtDate.getTime()) ? '-' : dateFormatter.format(createdAtDate),
+    time: Number.isNaN(createdAtDate.getTime()) ? '-' : timeFormatter.format(createdAtDate),
+    customer: tx?.recipientIdentifier || 'Unknown recipient',
+    amount: Number(tx?.amount || 0),
+    currency: String(tx?.sourceCurrency || 'USD').toUpperCase(),
+    type: bucketMeta?.typeLabel || 'Payment',
+    typeIcon: bucketMeta?.icon || 'Activity',
+    status: mapTxStatus(tx?.status),
+    paymentMethod: `${String(tx?.sourceCurrency || 'USD').toUpperCase()} Wallet`
+  };
+};
+
 const MerchantDashboard = () => {
   const [overview, setOverview] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tableFilters, setTableFilters] = useState(DEFAULT_TABLE_FILTERS);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tablePage, setTablePage] = useState(1);
+  const [tableTransactions, setTableTransactions] = useState([]);
+  const [tableMeta, setTableMeta] = useState({
+    total: 0,
+    limit: TABLE_PAGE_SIZE,
+    offset: 0,
+    hasMore: false
+  });
+  const [tableLoading, setTableLoading] = useState(true);
+  const [tableError, setTableError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -180,6 +226,81 @@ const MerchantDashboard = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(tableFilters.search.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [tableFilters.search]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTransactionsTable = async () => {
+      setTableLoading(true);
+      setTableError('');
+
+      try {
+        const params = {
+          limit: TABLE_PAGE_SIZE,
+          offset: (tablePage - 1) * TABLE_PAGE_SIZE
+        };
+
+        if (tableFilters.status) {
+          params.status = tableFilters.status;
+        }
+        if (tableFilters.sourceCurrency) {
+          params.sourceCurrency = tableFilters.sourceCurrency;
+        }
+        if (debouncedSearch) {
+          params.search = debouncedSearch;
+        }
+        if (tableFilters.from) {
+          params.from = tableFilters.from;
+        }
+        if (tableFilters.to) {
+          params.to = tableFilters.to;
+        }
+
+        const response = await apiClient.get('/transactions', { params });
+        const rows = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const meta = response?.data?.meta || {};
+
+        if (!isMounted) return;
+
+        setTableTransactions(rows.map(mapTransactionForTable));
+        setTableMeta({
+          total: Number(meta.total || 0),
+          limit: Number(meta.limit || TABLE_PAGE_SIZE),
+          offset: Number(meta.offset || 0),
+          hasMore: Boolean(meta.hasMore)
+        });
+      } catch (loadError) {
+        if (isMounted) {
+          setTableError(loadError?.response?.data?.error || 'Failed to load transactions');
+        }
+      } finally {
+        if (isMounted) {
+          setTableLoading(false);
+        }
+      }
+    };
+
+    loadTransactionsTable();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    tablePage,
+    tableFilters.status,
+    tableFilters.sourceCurrency,
+    tableFilters.from,
+    tableFilters.to,
+    debouncedSearch
+  ]);
 
   const analytics = useMemo(() => {
     const parsed = transactions
@@ -301,38 +422,29 @@ const MerchantDashboard = () => {
             : 'var(--color-warning)'
     }));
 
-    const dateFormatter = new Intl.DateTimeFormat('en-CA');
-    const timeFormatter = new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-
-    const recentTransactions = parsed.slice(0, 50).map((tx) => {
-      const bucketMeta = PAYMENT_BUCKETS[tx.bucket];
-      return {
-        id: `TXN-${String(tx.id).slice(0, 8).toUpperCase()}`,
-        date: dateFormatter.format(tx.createdAtDate),
-        time: timeFormatter.format(tx.createdAtDate),
-        customer: tx.recipientIdentifier || 'Unknown recipient',
-        amount: tx.amount,
-        currency: tx.sourceCurrency,
-        type: bucketMeta.typeLabel,
-        typeIcon: bucketMeta.icon,
-        status: mapTxStatus(tx.status),
-        paymentMethod: `${tx.sourceCurrency} Wallet`
-      };
-    });
-
     return {
       metrics,
       paymentBreakdown,
-      recentTransactions,
       weeklyRevenueData: buildWeeklyRevenue(parsed),
       monthlyRevenueData: buildMonthlyRevenue(parsed),
       distributionData
     };
   }, [overview, transactions]);
+
+  const handleTableFilterChange = (field, value) => {
+    setTableFilters((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+    setTablePage(1);
+  };
+
+  const handleResetTableFilters = () => {
+    setTableFilters(DEFAULT_TABLE_FILTERS);
+    setTablePage(1);
+  };
+
+  const tableTotalPages = Math.max(1, Math.ceil((tableMeta.total || 0) / TABLE_PAGE_SIZE));
 
   return (
     <div className="min-h-screen bg-background">
@@ -382,7 +494,19 @@ const MerchantDashboard = () => {
             <PaymentDistributionChart data={analytics.distributionData} />
           </div>
 
-          <RecentTransactionsTable transactions={analytics.recentTransactions} />
+          <RecentTransactionsTable
+            transactions={tableTransactions}
+            isLoading={tableLoading}
+            error={tableError}
+            filters={tableFilters}
+            onFilterChange={handleTableFilterChange}
+            onResetFilters={handleResetTableFilters}
+            currentPage={tablePage}
+            pageSize={TABLE_PAGE_SIZE}
+            totalCount={tableMeta.total}
+            totalPages={tableTotalPages}
+            onPageChange={setTablePage}
+          />
 
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6" style={{ fontFamily: 'var(--font-heading)' }}>
