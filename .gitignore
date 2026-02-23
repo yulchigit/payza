@@ -10,6 +10,9 @@ vite.config.*s.*
 .env
 .env.*
 !.env.example
-backend/.env
+!.env.production.example
+backend/.env*
+!backend/.env.example
+!backend/.env.production.example
 backend/api-dev.log
 backend/api-dev*.log

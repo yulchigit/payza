@@ -67,6 +67,7 @@
     "api:migrate": "npm --prefix backend run migrate",
     "api:dev": "npm --prefix backend run dev",
     "api:start": "npm --prefix backend run start",
+    "release:bootstrap:prod-env": "node scripts/bootstrap-prod-env.js",
     "release:preflight": "node scripts/release-preflight.js",
     "release:preflight:prod": "node scripts/release-preflight.js --target=production",
     "release:verify": "npm run release:preflight && npm --prefix backend test && npm run build",

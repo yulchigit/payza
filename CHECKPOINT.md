@@ -21,6 +21,10 @@
   - auth validators
   - recipient validators
   - transaction validators
+- Added automated backend flow tests (`node:test`) for:
+  - auth middleware token handling
+  - recipient service upsert/list/delete behavior
+  - transaction service idempotency, rollback, query meta mapping
 - Added release preflight automation:
   - `npm run release:verify`
   - `npm run release:verify:prod`
@@ -30,15 +34,26 @@
   - production cannot start with missing/unsafe `CORS_ORIGINS`
   - production rejects placeholder `JWT_SECRET`
   - strict PostgreSQL `DATABASE_URL` format check
+- Added production env bootstrap flow:
+  - `npm run release:bootstrap:prod-env`
+  - `.env.production.example` and `backend/.env.production.example`
+  - production preflight now reads dedicated production env files
+- Fixed production CORS localhost policy mismatch:
+  - `capacitor://localhost` and `ionic://localhost` are allowed for mobile WebView
+  - `http://localhost` / `https://localhost` remain blocked in production
+- Added deployment runbook:
+  - `DEPLOY_CHECKLIST.md`
 
 ## Verification done
 - DB migrations run successfully through `005`.
 - Frontend build passes.
+- Backend automated tests pass (`26/26`) after added flow + env policy coverage.
+- `npm run release:preflight:prod` passes.
 - API smoke test passed:
   - register test user
   - save favorite recipient
   - list favorite recipients (`count=1`)
 
 ## Next step when continuing
-1. Prepare production deploy execution (backend hosting + Vercel env + Android sync/rebuild).
-2. Add automated API tests for auth/transactions/recipients flows.
+1. Execute production deploy using `DEPLOY_CHECKLIST.md` (backend first, then Vercel).
+2. Rebuild Android release (`npm run mobile:sync`) and generate signed AAB.

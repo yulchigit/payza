@@ -38,11 +38,25 @@ const toInt = (value, fallback) => {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const hasLocalOrigin = (origins) =>
-  origins.some((origin) => {
-    const lower = String(origin || "").toLowerCase();
-    return lower.includes("localhost") || lower.includes("127.0.0.1");
-  });
+const isDisallowedLocalOrigin = (origin) => {
+  const value = String(origin || "").trim().toLowerCase();
+  if (!value) return false;
+
+  if (value === "capacitor://localhost" || value === "ionic://localhost") {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value);
+    const isHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    const isLocalHost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    return isHttp && isLocalHost;
+  } catch (error) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(value);
+  }
+};
+
+const hasLocalOrigin = (origins) => origins.some((origin) => isDisallowedLocalOrigin(origin));
 
 const isPlaceholderSecret = (value) => {
   const lower = String(value || "").toLowerCase();
@@ -87,7 +101,7 @@ if (nodeEnv === "production") {
     throw new Error("CORS_ORIGINS is required in production.");
   }
   if (hasLocalOrigin(corsOrigins)) {
-    throw new Error("CORS_ORIGINS cannot include localhost/127.0.0.1 in production.");
+    throw new Error("CORS_ORIGINS cannot include http/https localhost or 127.0.0.1 in production.");
   }
   if (isPlaceholderSecret(jwtSecret)) {
     throw new Error("JWT_SECRET looks like a placeholder and is not allowed in production.");

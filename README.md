@@ -39,6 +39,17 @@ Priority:
 
 ## Release Checks
 
+Create production env files once (safe bootstrap):
+```bash
+npm run release:bootstrap:prod-env
+```
+
+This creates:
+- `.env.production` from `.env.production.example`
+- `backend/.env.production` from `backend/.env.production.example`
+
+Then fill real production values.
+
 Run before deploy:
 ```bash
 npm run release:verify
@@ -59,10 +70,20 @@ npm run release:android
 - backend tests
 - frontend build
 
+Backend tests now cover:
+- validators
+- auth middleware token checks
+- recipient service upsert/list/delete logic
+- transaction service idempotency and rollback behavior
+
 `release:verify:prod` additionally enforces production-safe env constraints:
 - `CORS_ORIGINS` must be present
 - no localhost origins in CORS
 - no placeholder JWT secret
+
+`release:verify:prod` reads:
+- `.env.production`
+- `backend/.env.production`
 
 ## Production Deploy Order
 
@@ -79,6 +100,9 @@ npm run release:android
 5. Set Vercel env:
    - `VITE_API_BASE_URL=https://your-backend-domain/api`
 6. Deploy frontend.
+
+Detailed operator checklist:
+- `DEPLOY_CHECKLIST.md`
 
 ### Optional Docker backend
 ```bash

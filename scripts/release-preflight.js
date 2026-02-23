@@ -4,8 +4,6 @@ const fs = require("fs");
 const path = require("path");
 
 const projectRoot = path.resolve(__dirname, "..");
-const frontendEnvPath = path.join(projectRoot, ".env");
-const backendEnvPath = path.join(projectRoot, "backend", ".env");
 
 function readTargetFromArgs() {
   for (const arg of process.argv.slice(2)) {
@@ -19,6 +17,17 @@ function readTargetFromArgs() {
 const cliTarget = readTargetFromArgs();
 const target = String(cliTarget || process.env.RELEASE_TARGET || "local").trim().toLowerCase();
 const strictProduction = target === "production";
+
+const frontendEnvPath = strictProduction
+  ? path.join(projectRoot, ".env.production")
+  : path.join(projectRoot, ".env");
+
+const backendEnvPath = strictProduction
+  ? path.join(projectRoot, "backend", ".env.production")
+  : path.join(projectRoot, "backend", ".env");
+
+const frontendEnvName = strictProduction ? ".env.production" : ".env";
+const backendEnvName = strictProduction ? "backend/.env.production" : "backend/.env";
 
 const errors = [];
 const warnings = [];
@@ -71,28 +80,46 @@ function isLikelyPlaceholderSecret(secret) {
   );
 }
 
+function isDisallowedLocalOrigin(origin) {
+  const value = String(origin || "").trim().toLowerCase();
+  if (!value) return false;
+
+  if (value === "capacitor://localhost" || value === "ionic://localhost") {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value);
+    const isHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    const isLocalHost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    return isHttp && isLocalHost;
+  } catch (error) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(value);
+  }
+}
+
 function hasLocalOrigin(originsValue) {
   const origins = String(originsValue || "")
     .split(",")
-    .map((item) => item.trim().toLowerCase())
+    .map((item) => item.trim())
     .filter(Boolean);
-  return origins.some((origin) => origin.includes("localhost") || origin.includes("127.0.0.1"));
+  return origins.some((origin) => isDisallowedLocalOrigin(origin));
 }
 
 const frontendEnv = parseEnvFile(frontendEnvPath);
 const backendEnv = parseEnvFile(backendEnvPath);
 
 if (!frontendEnv) {
-  warnings.push("Root .env not found. Frontend will rely on runtime fallback.");
+  warnings.push(`${frontendEnvName} not found. Frontend will rely on runtime fallback.`);
 }
 
 if (!backendEnv) {
-  errors.push("backend/.env not found. Backend cannot start without required secrets.");
+  errors.push(`${backendEnvName} not found. Backend cannot start without required secrets.`);
 }
 
 if (frontendEnv) {
   const apiBaseUrl = String(frontendEnv.VITE_API_BASE_URL || "").trim();
-  warn(apiBaseUrl.length > 0, "VITE_API_BASE_URL is empty in .env.");
+  warn(apiBaseUrl.length > 0, `VITE_API_BASE_URL is empty in ${frontendEnvName}.`);
 
   if (strictProduction) {
     ensure(apiBaseUrl.startsWith("https://"), "Production requires VITE_API_BASE_URL to start with https://");
@@ -111,16 +138,19 @@ if (backendEnv) {
   const corsOrigins = String(backendEnv.CORS_ORIGINS || "").trim();
   const nodeEnv = String(backendEnv.NODE_ENV || "development").trim().toLowerCase();
 
-  ensure(databaseUrl.length > 0, "DATABASE_URL is required in backend/.env.");
-  ensure(jwtSecret.length >= 32, "JWT_SECRET must be at least 32 characters.");
-  ensure(jwtIssuer.length > 0, "JWT_ISSUER is required in backend/.env.");
-  ensure(jwtAudience.length > 0, "JWT_AUDIENCE is required in backend/.env.");
+  ensure(databaseUrl.length > 0, `DATABASE_URL is required in ${backendEnvName}.`);
+  ensure(jwtSecret.length >= 32, `JWT_SECRET must be at least 32 characters in ${backendEnvName}.`);
+  ensure(jwtIssuer.length > 0, `JWT_ISSUER is required in ${backendEnvName}.`);
+  ensure(jwtAudience.length > 0, `JWT_AUDIENCE is required in ${backendEnvName}.`);
   warn(!isLikelyPlaceholderSecret(jwtSecret), "JWT_SECRET looks like a placeholder.");
 
   if (strictProduction) {
-    ensure(nodeEnv === "production", "Production release requires NODE_ENV=production in backend/.env.");
-    ensure(corsOrigins.length > 0, "Production release requires CORS_ORIGINS.");
-    ensure(!hasLocalOrigin(corsOrigins), "Production CORS_ORIGINS must not include localhost/127.0.0.1.");
+    ensure(nodeEnv === "production", `Production release requires NODE_ENV=production in ${backendEnvName}.`);
+    ensure(corsOrigins.length > 0, `Production release requires CORS_ORIGINS in ${backendEnvName}.`);
+    ensure(
+      !hasLocalOrigin(corsOrigins),
+      "Production CORS_ORIGINS must not include http/https localhost or 127.0.0.1 origins."
+    );
   } else {
     warn(
       corsOrigins.length > 0,
