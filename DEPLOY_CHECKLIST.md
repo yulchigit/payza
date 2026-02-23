@@ -23,6 +23,18 @@
 - Verify health endpoint:
   - `GET https://<your-backend-domain>/api/health`
 
+### Railway (Free/Staging) quick path
+1. Railway -> New Project -> Deploy from GitHub repo.
+2. Select this repo and set service root directory to `backend`.
+3. Add `PostgreSQL` service in same Railway project.
+4. In backend service Variables, use `backend/.env.railway.staging.example` as template.
+5. Generate JWT secret locally:
+   - `npm run release:secret`
+6. For first deploy keep `RUN_MIGRATIONS=true`.
+7. Deploy and open generated backend domain:
+   - `https://<railway-domain>/api/health`
+8. After successful migration/deploy, set `RUN_MIGRATIONS=false` and redeploy.
+
 ## 4. Deploy web (Vercel)
 - In Vercel project env, set:
   - `VITE_API_BASE_URL=https://<your-backend-domain>/api`

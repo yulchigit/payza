@@ -60,6 +60,11 @@ Production strict checks:
 npm run release:verify:prod
 ```
 
+Generate strong JWT secret:
+```bash
+npm run release:secret
+```
+
 Android release prep:
 ```bash
 npm run release:android
@@ -92,6 +97,9 @@ Backend tests now cover:
 `release:verify:prod` reads:
 - `.env.production`
 - `backend/.env.production`
+
+Railway staging env template:
+- `backend/.env.railway.staging.example`
 
 ## Production Deploy Order
 
