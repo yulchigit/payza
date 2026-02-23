@@ -47,12 +47,17 @@
   - `android/key.properties.example`
   - release signing wiring in `android/app/build.gradle`
   - `npm run mobile:bundle:release`
+- Dependency security hardening:
+  - removed `@dhiwise/component-tagger` from build chain
+  - upgraded Vite toolchain to `vite@7` + latest React plugin
+  - committed lockfiles for deterministic installs
 
 ## Verification done
 - DB migrations run successfully through `005`.
 - Frontend build passes.
 - Backend automated tests pass (`26/26`) after added flow + env policy coverage.
 - `npm run release:preflight:prod` passes.
+- `npm audit` and `npm --prefix backend audit --omit=dev` return 0 vulnerabilities.
 - API smoke test passed:
   - register test user
   - save favorite recipient

@@ -148,3 +148,5 @@ docker run --rm -p 5000:5000 \
 - Use strict production `CORS_ORIGINS`.
 - Use strong JWT secret.
 - Keep release checks green before publish.
+- Remove unused build plugins/dependencies that widen attack surface.
+- Commit lockfiles for reproducible installs (`package-lock.json`, `backend/package-lock.json`).
