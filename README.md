@@ -1,13 +1,13 @@
 # PayZa
 
-PayZa - React/Vite frontend + Node.js/Express backend asosidagi fintech platforma.
+PayZa - React/Vite frontend + Node.js/Express backend fintech platform.
 
 ## Stack
 - Frontend: React 18, Vite 5, Redux Toolkit, Tailwind
 - Mobile wrapper: Capacitor (Android/iOS)
 - Backend: Express, PostgreSQL, JWT, Zod
 
-## 1) Local ishga tushirish
+## Local Run
 
 ### Frontend
 ```bash
@@ -22,38 +22,60 @@ npm run api:migrate
 npm run api:dev
 ```
 
-Backend `backend/.env` ichida ishlaydi. Minimal qiymatlar:
+Backend minimum env keys (`backend/.env`):
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `JWT_ISSUER`
 - `JWT_AUDIENCE`
 
-## 2) Frontend API sozlamasi
+## Frontend API Base URL
 
-Frontend API URL aniqlash tartibi:
-1. `VITE_API_BASE_URL` berilgan bo‘lsa shu ishlatiladi.
-2. Localhost bo‘lsa: `http://localhost:5000/api`
-3. Aks holda fallback: `/api`
+Priority:
+1. `VITE_API_BASE_URL` from `.env`
+2. localhost fallback: `http://localhost:5000/api`
+3. runtime fallback: `/api`
 
-Root `.env` faylni repoga qo‘shmang. Namuna uchun `.env.example` bor.
+`.env` must not be committed. Use `.env.example` as template.
 
-## 3) Production deploy ketma-ketligi
+## Release Checks
 
-1. PostgreSQL production bazani tayyorlang.
-2. Backendni deploy qiling (Railway/Render/Fly/VM yoki Docker).
-3. Backend envlarni kiriting:
+Run before deploy:
+```bash
+npm run release:verify
+```
+
+Production strict checks:
+```bash
+npm run release:verify:prod
+```
+
+Android release prep:
+```bash
+npm run release:android
+```
+
+`release:verify` runs:
+- env preflight checks
+- backend tests
+- frontend build
+
+## Production Deploy Order
+
+1. Prepare PostgreSQL production database.
+2. Deploy backend (Railway/Render/Fly/VM or Docker).
+3. Set backend envs:
    - `NODE_ENV=production`
    - `DATABASE_URL=...`
-   - `JWT_SECRET=...` (kamida 32 belgi)
+   - `JWT_SECRET=...` (min 32 chars)
    - `JWT_ISSUER=...`
    - `JWT_AUDIENCE=...`
    - `CORS_ORIGINS=https://your-web-domain.com,capacitor://localhost`
-4. Backendda migratsiya ishlating: `npm run api:migrate`.
-5. Vercel project envga kiriting:
+4. Run backend migrations: `npm run api:migrate`.
+5. Set Vercel env:
    - `VITE_API_BASE_URL=https://your-backend-domain/api`
-6. Frontendni deploy qiling.
+6. Deploy frontend.
 
-### Docker orqali backend deploy (ixtiyoriy)
+### Optional Docker backend
 ```bash
 docker build -t payza-backend ./backend
 docker run --rm -p 5000:5000 \
@@ -67,21 +89,16 @@ docker run --rm -p 5000:5000 \
   payza-backend
 ```
 
-## 4) Android/iOS yangilanish oqimi
+## Web vs Mobile Updates
 
-Kodga o‘zgarish kiritilganda:
-1. Web: `git push` -> Vercel auto deploy.
-2. Mobile (Capacitor): alohida sync/build kerak:
-```bash
-npm run mobile:sync
-```
-3. Android Studio/Xcode ichida yangi build (`.aab`/`.apk` yoki iOS archive) chiqariladi.
+- Web: `git push` triggers Vercel auto deploy (if repo linked).
+- Mobile: `git push` alone is not enough.
+  - Run `npm run mobile:sync`
+  - Build new Android/iOS release in Android Studio/Xcode.
 
-`git push`ning o‘zi Android/iOS ilovani avtomatik update qilmaydi.
+## Security Notes
 
-## 5) Muhim xavfsizlik eslatmalari
-
-- `.env` va boshqa maxfiy fayllar repoga kiritilmaydi.
-- `CORS_ORIGINS` productionda aniq domenlar bilan to‘ldiriladi.
-- JWT secret kuchli bo‘lishi shart.
-- Auth endpointlar rate limit bilan himoyalangan.
+- Keep `.env` and all secrets out of git.
+- Use strict production `CORS_ORIGINS`.
+- Use strong JWT secret.
+- Keep release checks green before publish.
