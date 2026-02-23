@@ -65,6 +65,14 @@ Android release prep:
 npm run release:android
 ```
 
+Signed Android AAB:
+```bash
+npm run mobile:bundle:release
+```
+Before this, configure:
+- `android/key.properties` (use `android/key.properties.example`)
+- release keystore file in `android/` (example: `payza-release-key.jks`)
+
 `release:verify` runs:
 - env preflight checks
 - backend tests

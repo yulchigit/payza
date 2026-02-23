@@ -1,0 +1,4 @@
+storeFile=../payza-release-key.jks
+storePassword=replace-with-strong-store-password
+keyAlias=payza
+keyPassword=replace-with-strong-key-password

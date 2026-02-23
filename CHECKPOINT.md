@@ -43,6 +43,10 @@
   - `http://localhost` / `https://localhost` remain blocked in production
 - Added deployment runbook:
   - `DEPLOY_CHECKLIST.md`
+- Added Android release signing setup:
+  - `android/key.properties.example`
+  - release signing wiring in `android/app/build.gradle`
+  - `npm run mobile:bundle:release`
 
 ## Verification done
 - DB migrations run successfully through `005`.

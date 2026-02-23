@@ -14,5 +14,9 @@ vite.config.*s.*
 backend/.env*
 !backend/.env.example
 !backend/.env.production.example
+android/key.properties
+android/*.jks
+android/*.keystore
+!android/key.properties.example
 backend/api-dev.log
 backend/api-dev*.log

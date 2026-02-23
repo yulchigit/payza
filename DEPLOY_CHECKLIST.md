@@ -36,9 +36,16 @@
 ## 5. Update Android app
 - Sync latest web build into Capacitor:
   - `npm run mobile:sync`
+- Prepare signing files (one-time):
+  - copy `android/key.properties.example` -> `android/key.properties`
+  - set real values in `android/key.properties`
+  - place keystore file in `android/` (example: `android/payza-release-key.jks`)
+  - keep `storeFile=../payza-release-key.jks` in `android/key.properties`
 - Open Android project:
   - `npm run mobile:android`
-- Build signed release AAB from Android Studio.
+- Build signed release AAB:
+  - CLI: `npm run mobile:bundle:release`
+  - output: `android/app/build/outputs/bundle/release/app-release.aab`
 - Upload AAB to Play Console release track.
 
 ## 6. Post-release safety checks
