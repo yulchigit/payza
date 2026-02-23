@@ -7,7 +7,17 @@ const projectRoot = path.resolve(__dirname, "..");
 const frontendEnvPath = path.join(projectRoot, ".env");
 const backendEnvPath = path.join(projectRoot, "backend", ".env");
 
-const target = String(process.env.RELEASE_TARGET || "local").trim().toLowerCase();
+function readTargetFromArgs() {
+  for (const arg of process.argv.slice(2)) {
+    if (arg.startsWith("--target=")) {
+      return arg.slice("--target=".length);
+    }
+  }
+  return null;
+}
+
+const cliTarget = readTargetFromArgs();
+const target = String(cliTarget || process.env.RELEASE_TARGET || "local").trim().toLowerCase();
 const strictProduction = target === "production";
 
 const errors = [];

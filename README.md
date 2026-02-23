@@ -59,6 +59,11 @@ npm run release:android
 - backend tests
 - frontend build
 
+`release:verify:prod` additionally enforces production-safe env constraints:
+- `CORS_ORIGINS` must be present
+- no localhost origins in CORS
+- no placeholder JWT secret
+
 ## Production Deploy Order
 
 1. Prepare PostgreSQL production database.

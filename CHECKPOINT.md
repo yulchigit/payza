@@ -26,6 +26,10 @@
   - `npm run release:verify:prod`
   - `npm run release:android`
   - Env checks now run before build/release flow.
+- Backend runtime env hardening:
+  - production cannot start with missing/unsafe `CORS_ORIGINS`
+  - production rejects placeholder `JWT_SECRET`
+  - strict PostgreSQL `DATABASE_URL` format check
 
 ## Verification done
 - DB migrations run successfully through `005`.
