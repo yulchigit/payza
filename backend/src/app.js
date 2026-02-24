@@ -33,7 +33,8 @@ app.use(
   })
 );
 app.use(express.json({ limit: "100kb" }));
-app.use(apiLimiter);
+
+// CORS FIRST (before rate limiting)
 app.use(
   cors({
     origin(origin, callback) {
@@ -57,6 +58,9 @@ app.use(
     maxAge: 600
   })
 );
+
+// Then rate limiting
+app.use(apiLimiter);
 
 app.use("/api", healthRoutes);
 app.use("/api/auth", authRoutes);
