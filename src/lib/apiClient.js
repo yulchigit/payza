@@ -15,7 +15,10 @@ const resolveApiBaseUrl = () => {
     }
   }
 
-  return "/api";
+  // If no VITE_API_BASE_URL provided and not running locally,
+  // default to the deployed backend URL so production builds work
+  // even when environment variable was not set.
+  return "https://payza.up.railway.app/api";
 };
 
 const apiBaseUrl = resolveApiBaseUrl();

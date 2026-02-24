@@ -10,20 +10,28 @@ async function run() {
     .sort();
 
   if (files.length === 0) {
-    console.log("No migration files found.");
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("No migration files found.");
+    }
     return;
   }
 
-  console.log(`Running ${files.length} migrations...`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Running ${files.length} migrations...`);
+  }
 
   for (const file of files) {
     const fullPath = path.join(sqlDir, file);
     const sql = fs.readFileSync(fullPath, "utf8");
-    console.log(`- ${file}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`- ${file}`);
+    }
     await pool.query(sql);
   }
 
-  console.log("Migrations completed successfully.");
+  if (process.env.NODE_ENV !== 'production') {
+    console.log("Migrations completed successfully.");
+  }
 }
 
 run()
