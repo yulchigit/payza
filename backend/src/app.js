@@ -17,6 +17,23 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+// Temporary debug middleware: log OPTIONS and register requests to diagnose 405
+app.use((req, res, next) => {
+  try {
+    const isRegisterPath = req.originalUrl && req.originalUrl.includes('/api/auth/register');
+    if (req.method === 'OPTIONS' || isRegisterPath) {
+      console.log('---CORS-DEBUG START---');
+      console.log(`method=${req.method} url=${req.originalUrl}`);
+      console.log(`origin=${req.headers.origin || '(none)'} host=${req.headers.host || '(none)'} x-forwarded-proto=${req.headers['x-forwarded-proto'] || '(none)'}`);
+      console.log(`user-agent=${req.headers['user-agent'] || '(none)'} remoteAddress=${req.ip || req.connection?.remoteAddress || '(none)'}`);
+      console.log('---CORS-DEBUG END---');
+    }
+  } catch (e) {
+    // swallow any logging errors
+  }
+  return next();
+});
+
 // HTTPS redirect in production
 if (env.nodeEnv === "production") {
   app.use((req, res, next) => {
