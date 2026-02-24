@@ -13,7 +13,7 @@ const {
   clearLoginSecurityState,
   createAuthAuditLog
 } = require("../services/userService");
-const { authLimiter } = require("../middleware/rateLimiters");
+const { authLimiter, passwordResetLimiter } = require("../middleware/rateLimiters");
 const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
@@ -234,6 +234,62 @@ router.get(
         fullName: user.full_name,
         email: user.email,
         createdAt: user.created_at
+      }
+    });
+  })
+);
+
+// Password reset request endpoint (rate-limited to prevent email enumeration)
+router.post(
+  "/forgot-password",
+  passwordResetLimiter,
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Email is required"
+      });
+    }
+
+    const clientIp = getClientIp(req);
+    const user = await findUserByEmail(email);
+
+    if (user) {
+      // In production, send password reset email here
+      // For now, just log the request for security audit
+      await createAuthAuditLog({
+        userId: user.id,
+        email: user.email,
+        eventType: "password_reset_requested",
+        isSuccess: true,
+        ipAddress: clientIp,
+        userAgent: req.get("user-agent")
+      });
+
+      // TODO: Implement email sending (Sendgrid, AWS SES, etc.)
+      // const resetToken = crypto.randomBytes(32).toString('hex');
+      // Save resetToken in database with expiry (30 min)
+      // Send email with reset link
+    } else {
+      // Don't reveal if email exists (prevent enumeration attacks)
+      await createAuthAuditLog({
+        userId: null,
+        email,
+        eventType: "password_reset_requested",
+        isSuccess: false,
+        failureReason: "email_not_found",
+        ipAddress: clientIp,
+        userAgent: req.get("user-agent")
+      });
+    }
+
+    // Always return success (prevent email enumeration)
+    return res.json({
+      success: true,
+      data: {
+        message: "If an account exists with this email, a password reset link has been sent."
       }
     });
   })
