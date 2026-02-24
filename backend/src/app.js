@@ -16,6 +16,17 @@ const app = express();
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+// HTTPS redirect in production
+if (env.nodeEnv === "production") {
+  app.use((req, res, next) => {
+    if (req.header("x-forwarded-proto") !== "https") {
+      res.redirect(`https://${req.header("host")}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }

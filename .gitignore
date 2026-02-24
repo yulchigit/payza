@@ -20,3 +20,13 @@ android/*.keystore
 !android/key.properties.example
 backend/api-dev.log
 backend/api-dev*.log
+
+# Test and debug files
+test-api.js
+test-api.ps1
+test-api.sh
+test-simple.ps1
+backend/generate-test-token.js
+backend/create-db.js
+public/test-*.html
+MVP_READY.md
