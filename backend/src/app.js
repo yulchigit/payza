@@ -17,6 +17,37 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+// Request ID middleware for request tracing
+let requestCounter = 0;
+app.use((req, res, next) => {
+  req.id = `${Date.now()}-${++requestCounter}`;
+  req.startTime = Date.now();
+  next();
+});
+
+// Request/response logging middleware (structured for production)
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  res.send = function (data) {
+    const duration = Date.now() - req.startTime;
+    if (res.statusCode >= 400) {
+      const logEntry = {
+        level: res.statusCode >= 500 ? "error" : "warn",
+        timestamp: new Date().toISOString(),
+        requestId: req.id,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        duration: `${duration}ms`,
+        ip: req.ip
+      };
+      console.log(JSON.stringify(logEntry));
+    }
+    return originalSend.call(this, data);
+  };
+  next();
+});
+
 // HTTPS redirect in production
 if (env.nodeEnv === "production") {
   app.use((req, res, next) => {
