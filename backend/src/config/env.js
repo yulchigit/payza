@@ -31,6 +31,12 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   "ionic://localhost"
 ];
 
+const DEFAULT_PRODUCTION_CORS_ORIGINS = [
+  "https://payza-gray.vercel.app",
+  "https://payza.vercel.app",
+  "https://payza-fj0xjzd4n-yulchinarziyev-1538s-projects.vercel.app"
+];
+
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -79,7 +85,7 @@ const corsOrigins =
   providedCorsOrigins.length > 0
     ? providedCorsOrigins
     : nodeEnv === "production"
-      ? []
+      ? DEFAULT_PRODUCTION_CORS_ORIGINS
       : DEFAULT_DEV_CORS_ORIGINS;
 
 const databaseUrl = String(process.env.DATABASE_URL || "").trim();
