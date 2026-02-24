@@ -1,12 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
 import MetricCard from './components/MetricCard';
 import PaymentBreakdownCard from './components/PaymentBreakdownCard';
-import RevenueChart from './components/RevenueChart';
-import PaymentDistributionChart from './components/PaymentDistributionChart';
 import RecentTransactionsTable from './components/RecentTransactionsTable';
 import QuickActionsPanel from './components/QuickActionsPanel';
 import apiClient from 'lib/apiClient';
+
+// Lazy-load chart components
+const RevenueChart = lazy(() => import('./components/RevenueChart'));
+const PaymentDistributionChart = lazy(() => import('./components/PaymentDistributionChart'));
+
+// Loading skeleton for charts
+const ChartSkeleton = () => (
+  <div className="bg-card border border-border rounded-xl p-6 md:p-8 animate-pulse">
+    <div className="h-6 bg-muted rounded w-32 mb-6" />
+    <div className="space-y-4">
+      <div className="h-40 bg-muted rounded" />
+      <div className="h-4 bg-muted rounded w-24" />
+    </div>
+  </div>
+);
 
 const UZS_PER_USD = 12650;
 const USD_RATES = {
@@ -490,8 +503,12 @@ const MerchantDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-            <RevenueChart weeklyData={analytics.weeklyRevenueData} monthlyData={analytics.monthlyRevenueData} />
-            <PaymentDistributionChart data={analytics.distributionData} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <RevenueChart weeklyData={analytics.weeklyRevenueData} monthlyData={analytics.monthlyRevenueData} />
+            </Suspense>
+            <Suspense fallback={<ChartSkeleton />}>
+              <PaymentDistributionChart data={analytics.distributionData} />
+            </Suspense>
           </div>
 
           <RecentTransactionsTable
