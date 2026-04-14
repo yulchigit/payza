@@ -5,6 +5,20 @@ const TOKEN_KEY = "payza_access_token";
 const AuthContext = createContext(null);
 
 const normalizeAuthError = (error) => {
+  const errorCode = String(error?.code || "").toUpperCase();
+  const errorMessage = String(error?.message || "");
+  const hasResponse = Boolean(error?.response);
+
+  if (!hasResponse) {
+    if (errorCode === "ECONNABORTED") {
+      return "Server javob bermadi (timeout). Internetni tekshirib qayta urinib ko'ring.";
+    }
+
+    if (errorCode === "ERR_NETWORK" || /network\s*error/i.test(errorMessage)) {
+      return "Serverga ulanib bo'lmadi. Ilovani yangilang va qayta urinib ko'ring.";
+    }
+  }
+
   const message = error?.response?.data?.error || error?.message || "Authentication failed";
   return typeof message === "string" ? message : "Authentication failed";
 };

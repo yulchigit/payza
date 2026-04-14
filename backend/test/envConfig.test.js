@@ -46,6 +46,18 @@ test("production env allows capacitor and ionic localhost origins", () => {
 test("production env rejects http localhost origins", () => {
   assert.throws(
     () => loadProductionEnv("https://payza.example,http://localhost:4029"),
-    /CORS_ORIGINS cannot include http\/https localhost or 127\.0\.0\.1 in production\./
+    /CORS_ORIGINS cannot include http\/https localhost or 127\.0\.0\.1 in production unless CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true\./
   );
+});
+
+test("production env allows localhost origins when explicitly enabled for mobile", () => {
+  process.env.CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN = "true";
+  const env = loadProductionEnv("https://payza.example,https://localhost,http://localhost,capacitor://localhost");
+  assert.equal(env.corsAllowMobileLocalhostOrigin, true);
+  assert.deepEqual(env.corsOrigins, [
+    "https://payza.example",
+    "https://localhost",
+    "http://localhost",
+    "capacitor://localhost"
+  ]);
 });

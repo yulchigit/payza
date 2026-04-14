@@ -1,144 +1,248 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RoleBasedNavigation from "../../components/ui/RoleBasedNavigation";
 import ConversionCalculator from "./components/ConversionCalculator";
 import ExchangeRateCard from "./components/ExchangeRateCard";
 import FeeBreakdown from "./components/FeeBreakdown";
-import DestinationCardSelector from "./components/DestinationCardSelector";
 import ConversionSettings from "./components/ConversionSettings";
 import TransactionSummary from "./components/TransactionSummary";
 import MarketDataWidget from "./components/MarketDataWidget";
 import ConversionSuccessModal from "./components/ConversionSuccessModal";
 import apiClient from "lib/apiClient";
 
-const CARD_IMAGE = "https://img.rocket.new/generatedImages/rocket_gen_img_118081b5e-1767009652734.png";
+const DEFAULT_WALLET_BALANCES = {
+  UZS: 0,
+  USDT: 0,
+  BTC: 0
+};
 
-const DEFAULT_EXCHANGE_RATES = {
-  USDT: {
-    USD: 1,
-    UZS: 12650
-  },
-  BTC: {
-    USD: 45000,
-    UZS: 569250000
+const createIdempotencyKey = () => `swap-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const formatReceivedAmount = (value, currency) => {
+  const amount = Number(value || 0);
+  if (currency === 'BTC') {
+    return amount.toFixed(8);
   }
+  if (currency === 'UZS') {
+    return amount.toFixed(2);
+  }
+  return amount.toFixed(4);
 };
 
 const CryptoToCardConversion = () => {
   const navigate = useNavigate();
-  const [cryptoType, setCryptoType] = useState("USDT");
-  const [cryptoAmount, setCryptoAmount] = useState("");
-  const [fiatCurrency, setFiatCurrency] = useState("USD");
-  const [fiatAmount, setFiatAmount] = useState("0.00");
-  const [selectedCard, setSelectedCard] = useState(null);
+  const [fromCurrency, setFromCurrency] = useState("UZS");
+  const [toCurrency, setToCurrency] = useState("USDT");
+  const [fromAmount, setFromAmount] = useState("");
+  const [toAmount, setToAmount] = useState("0.00");
   const [slippageTolerance, setSlippageTolerance] = useState(0.5);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [transactionId, setTransactionId] = useState("");
-  const [linkedCards, setLinkedCards] = useState([]);
-  const [cryptoBalances, setCryptoBalances] = useState({
-    USDT: "0.00",
-    BTC: "0.00"
-  });
+  const [successDetails, setSuccessDetails] = useState(null);
+  const [walletBalances, setWalletBalances] = useState(DEFAULT_WALLET_BALANCES);
+  const [marketOverview, setMarketOverview] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [quote, setQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [formError, setFormError] = useState("");
 
-  const exchangeRates = DEFAULT_EXCHANGE_RATES;
+  const loadWalletOverview = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setPageLoading(true);
+    }
+
+    try {
+      const walletResponse = await apiClient.get("/wallet/overview", { params: { limit: 5 } });
+      const overview = walletResponse?.data?.data || {};
+      const balances = {
+        UZS: 0,
+        USDT: 0,
+        BTC: 0
+      };
+
+      [...(overview?.traditionalBalances || []), ...(overview?.cryptoBalances || [])].forEach((item) => {
+        balances[item.currency] = Number(item.amount || 0);
+      });
+
+      setWalletBalances(balances);
+      setMarketOverview(overview?.market || null);
+    } catch (error) {
+      setFormError(error?.response?.data?.error || "Failed to load exchange data");
+    } finally {
+      if (!silent) {
+        setPageLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadData = async () => {
+    const bootstrap = async () => {
       try {
-        const [walletResponse, methodsResponse] = await Promise.all([
-          apiClient.get("/wallet/overview", { params: { limit: 1 } }),
-          apiClient.get("/payment-methods")
-        ]);
-
-        const overview = walletResponse?.data?.data || {};
-        const methodRows = methodsResponse?.data?.data || [];
-
-        const walletMap = {};
-        (overview?.cryptoBalances || []).forEach((item) => {
-          walletMap[item.currency] = Number(item.amount || 0);
-        });
-
-        const cards = methodRows
-          .filter((method) => method?.category === "traditional" && method?.status === "connected")
-          .map((method, index) => ({
-            id: method.id,
-            type: method.name,
-            lastFour: method.last_four || "0000",
-            logo: CARD_IMAGE,
-            logoAlt: `${method.name} card`,
-            processingTime: "1-2 hours",
-            dailyLimit: "$5,000",
-            isDefault: index === 0
-          }));
-
-        if (isMounted) {
-          setLinkedCards(cards);
-          setCryptoBalances({
-            USDT: (walletMap.USDT || 0).toFixed(2),
-            BTC: (walletMap.BTC || 0).toFixed(8)
-          });
-          if (cards.length > 0) {
-            setSelectedCard(cards[0].id);
-          }
-        }
-      } catch (error) {
-        if (isMounted) {
-          setFormError(error?.response?.data?.error || "Failed to load conversion data");
+        await loadWalletOverview();
+      } finally {
+        if (!isMounted) {
+          return;
         }
       }
     };
 
-    loadData();
+    bootstrap();
+    const intervalId = setInterval(() => {
+      loadWalletOverview({ silent: true });
+    }, 20000);
+
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
   }, []);
 
   useEffect(() => {
-    if (cryptoAmount && !Number.isNaN(Number.parseFloat(cryptoAmount))) {
-      const amount = Number.parseFloat(cryptoAmount);
-      const rate = exchangeRates?.[cryptoType]?.[fiatCurrency];
-      const converted = amount * rate;
-      setFiatAmount(converted?.toFixed(2));
-    } else {
-      setFiatAmount("0.00");
-    }
-  }, [cryptoAmount, cryptoType, fiatCurrency, exchangeRates]);
+    let cancelled = false;
 
-  const handleSwap = () => {};
+    const loadHistory = async () => {
+      try {
+        const response = await apiClient.get("/market/history", {
+          params: {
+            baseCurrency: toCurrency,
+            quoteCurrency: fromCurrency,
+            interval: "1h",
+            limit: 24
+          }
+        });
+
+        if (!cancelled) {
+          setHistory(response?.data?.data || []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setHistory([]);
+        }
+      }
+    };
+
+    loadHistory();
+    const intervalId = setInterval(loadHistory, 20000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [fromCurrency, toCurrency]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!fromAmount || Number(fromAmount) <= 0 || fromCurrency === toCurrency) {
+      setQuote(null);
+      setToAmount("0.00");
+      return () => {};
+    }
+
+    const sourceBalance = Number(walletBalances?.[fromCurrency] || 0);
+    if (Number(fromAmount) > sourceBalance) {
+      setFormError(`Insufficient ${fromCurrency} balance for this swap.`);
+      setQuote(null);
+      setToAmount("0.00");
+      return () => {};
+    }
+
+    const loadQuote = async () => {
+      setQuoteLoading(true);
+      setFormError("");
+
+      try {
+        const response = await apiClient.post("/market/quote", {
+          fromCurrency,
+          toCurrency,
+          amount: fromAmount
+        });
+
+        const nextQuote = response?.data?.data || null;
+        if (!cancelled) {
+          setQuote(nextQuote);
+          setToAmount(formatReceivedAmount(nextQuote?.netOutput, toCurrency));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setQuote(null);
+          setToAmount("0.00");
+          setFormError(error?.response?.data?.error || "Failed to refresh quote");
+        }
+      } finally {
+        if (!cancelled) {
+          setQuoteLoading(false);
+        }
+      }
+    };
+
+    loadQuote();
+    const intervalId = setInterval(loadQuote, 15000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [fromAmount, fromCurrency, toCurrency, walletBalances]);
+
+  const handleSwapDirection = () => {
+    const nextSourceAmount = quote?.netOutput ? formatReceivedAmount(quote.netOutput, toCurrency) : "";
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
+    setFromAmount(nextSourceAmount);
+    setQuote(null);
+    setToAmount("0.00");
+  };
 
   const handleConfirmConversion = async () => {
     setFormError("");
-    if (!selectedCard) {
-      setFormError("Connect a destination card first.");
+
+    if (!fromAmount || Number(fromAmount) <= 0) {
+      setFormError("Enter a valid amount first.");
+      return;
+    }
+
+    if (Number(fromAmount) > Number(walletBalances?.[fromCurrency] || 0)) {
+      setFormError(`Insufficient ${fromCurrency} balance for this swap.`);
       return;
     }
 
     setIsProcessing(true);
     try {
-      const card = linkedCards.find((item) => item?.id === selectedCard);
       const response = await apiClient.post(
-        "/transactions",
+        "/market/swap",
         {
-          recipientIdentifier: `${card?.type} ****${card?.lastFour}`,
-          sourceCurrency: cryptoType,
-          amount: Number.parseFloat(cryptoAmount)
+          fromCurrency,
+          toCurrency,
+          amount: fromAmount,
+          maxSlippageBps: Math.round(Number(slippageTolerance || 0) * 100)
         },
         {
           headers: {
-            "Idempotency-Key": `convert-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+            "Idempotency-Key": createIdempotencyKey()
           }
         }
       );
 
-      setTransactionId(response?.data?.data?.id || "");
+      const result = response?.data?.data;
+      setSuccessDetails({
+        transactionId: result?.transaction?.id,
+        fromCurrency,
+        toCurrency,
+        fromAmount,
+        toAmount: result?.quote?.netOutput,
+        effectiveRate: result?.quote?.effectiveRate
+      });
       setShowSuccessModal(true);
+      setFromAmount("");
+      setQuote(null);
+      setToAmount("0.00");
+      await loadWalletOverview({ silent: true });
     } catch (error) {
-      setFormError(error?.response?.data?.error || "Conversion failed");
+      setFormError(error?.response?.data?.error || "Swap failed");
     } finally {
       setIsProcessing(false);
     }
@@ -149,21 +253,6 @@ const CryptoToCardConversion = () => {
     navigate("/user-wallet-dashboard");
   };
 
-  const selectedCardDetails = linkedCards?.find((card) => card?.id === selectedCard);
-
-  const conversionDetails = useMemo(
-    () => ({
-      transactionId,
-      cryptoAmount,
-      cryptoType,
-      fiatAmount: Number.parseFloat(fiatAmount),
-      fiatCurrency,
-      cardLastFour: selectedCardDetails?.lastFour || "",
-      processingTime: selectedCardDetails?.processingTime || ""
-    }),
-    [cryptoAmount, cryptoType, fiatAmount, fiatCurrency, selectedCardDetails, transactionId]
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole="user" />
@@ -171,11 +260,17 @@ const CryptoToCardConversion = () => {
       <main className="pt-24 pb-12 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Crypto to Card Conversion</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Live Demo Exchange</h1>
             <p className="text-base md:text-lg text-muted-foreground">
-              Convert your cryptocurrency to traditional currency and transfer to your linked cards
+              Convert UZS, USDT, and BTC using live Binance market data and official CBU FX references
             </p>
           </div>
+
+          {pageLoading && (
+            <div className="bg-card border border-border rounded-lg p-4 text-sm text-muted-foreground mb-6">
+              Loading market references and wallet balances...
+            </div>
+          )}
 
           {formError && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-sm text-destructive mb-6">
@@ -186,59 +281,58 @@ const CryptoToCardConversion = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div className="lg:col-span-2 space-y-6">
               <ConversionCalculator
-                cryptoType={cryptoType}
-                setCryptoType={setCryptoType}
-                cryptoAmount={cryptoAmount}
-                setCryptoAmount={setCryptoAmount}
-                fiatCurrency={fiatCurrency}
-                setFiatCurrency={setFiatCurrency}
-                fiatAmount={fiatAmount}
-                cryptoBalances={cryptoBalances}
-                exchangeRates={exchangeRates}
-                onSwap={handleSwap}
+                fromCurrency={fromCurrency}
+                setFromCurrency={setFromCurrency}
+                fromAmount={fromAmount}
+                setFromAmount={setFromAmount}
+                toCurrency={toCurrency}
+                setToCurrency={setToCurrency}
+                toAmount={toAmount}
+                walletBalances={walletBalances}
+                conversionRate={quote?.effectiveRate}
+                onSwapDirection={handleSwapDirection}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ExchangeRateCard cryptoType={cryptoType} fiatCurrency={fiatCurrency} exchangeRates={exchangeRates} />
-
-                <FeeBreakdown
-                  cryptoType={cryptoType}
-                  cryptoAmount={cryptoAmount}
-                  fiatCurrency={fiatCurrency}
-                  fiatAmount={fiatAmount}
+                <ExchangeRateCard
+                  fromCurrency={fromCurrency}
+                  toCurrency={toCurrency}
+                  quote={quote}
+                  history={history}
                 />
-              </div>
 
-              <DestinationCardSelector
-                selectedCard={selectedCard}
-                setSelectedCard={setSelectedCard}
-                linkedCards={linkedCards}
-              />
+                <FeeBreakdown quote={quote} />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ConversionSettings
                   slippageTolerance={slippageTolerance}
                   setSlippageTolerance={setSlippageTolerance}
-                  minAmount={cryptoType === "BTC" ? "0.001" : "10"}
-                  maxAmount={cryptoType === "BTC" ? "10" : "50000"}
-                  cryptoType={cryptoType}
-                  fiatCurrency={fiatCurrency}
+                  minAmount={fromCurrency === 'BTC' ? '0.0001' : fromCurrency === 'USDT' ? '5' : '50000'}
+                  maxAmount={fromCurrency === 'BTC' ? '5' : fromCurrency === 'USDT' ? '100000' : '500000000'}
+                  cryptoType={fromCurrency}
+                  fiatCurrency={toCurrency}
                 />
 
-                <MarketDataWidget cryptoType={cryptoType} fiatCurrency={fiatCurrency} />
+                <MarketDataWidget
+                  baseCurrency={toCurrency}
+                  quoteCurrency={fromCurrency}
+                  history={history}
+                  featuredMarkets={marketOverview?.featuredMarkets || []}
+                />
               </div>
             </div>
 
             <div className="lg:col-span-1">
               <TransactionSummary
-                cryptoType={cryptoType}
-                cryptoAmount={cryptoAmount}
-                fiatCurrency={fiatCurrency}
-                fiatAmount={fiatAmount}
-                selectedCard={selectedCard}
-                linkedCards={linkedCards}
+                fromCurrency={fromCurrency}
+                toCurrency={toCurrency}
+                fromAmount={fromAmount}
+                walletBalances={walletBalances}
+                quote={quote}
                 onConfirm={handleConfirmConversion}
                 isProcessing={isProcessing}
+                quoteLoading={quoteLoading}
               />
             </div>
           </div>
@@ -248,7 +342,7 @@ const CryptoToCardConversion = () => {
       <ConversionSuccessModal
         isOpen={showSuccessModal}
         onClose={handleCloseSuccessModal}
-        conversionDetails={conversionDetails}
+        conversionDetails={successDetails}
       />
     </div>
   );

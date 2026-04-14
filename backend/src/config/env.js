@@ -31,26 +31,24 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   "ionic://localhost"
 ];
 
-const DEFAULT_PRODUCTION_CORS_ORIGINS = [
-  "https://payza-gray.vercel.app",
-  "https://payza.vercel.app",
-  "https://payza-fj0xjzd4n-yulchinarziyev-1538s-projects.vercel.app"
-];
-
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toBool = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+};
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const isDisallowedLocalOrigin = (origin) => {
+const isLocalWebOrigin = (origin) => {
   const value = String(origin || "").trim().toLowerCase();
   if (!value) return false;
 
-  if (value === "capacitor://localhost" || value === "ionic://localhost") {
-    return false;
-  }
+  if (value === "capacitor://localhost" || value === "ionic://localhost") return false;
 
   try {
     const parsed = new URL(value);
@@ -62,7 +60,16 @@ const isDisallowedLocalOrigin = (origin) => {
   }
 };
 
-const hasLocalOrigin = (origins) => origins.some((origin) => isDisallowedLocalOrigin(origin));
+const hasDisallowedLocalOrigin = ({ origins, allowMobileLocalhostOrigin }) =>
+  origins.some((origin) => {
+    const value = String(origin || "").trim().toLowerCase();
+    if (!value) return false;
+    if (value === "capacitor://localhost" || value === "ionic://localhost") return false;
+    if (isLocalWebOrigin(value)) {
+      return !allowMobileLocalhostOrigin;
+    }
+    return false;
+  });
 
 const isPlaceholderSecret = (value) => {
   const lower = String(value || "").toLowerCase();
@@ -80,12 +87,13 @@ if (jwtSecret.length < 32) {
 }
 
 const nodeEnv = process.env.NODE_ENV || "development";
+const corsAllowMobileLocalhostOrigin = toBool(process.env.CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN, false);
 const providedCorsOrigins = parseOrigins(process.env.CORS_ORIGINS);
 const corsOrigins =
   providedCorsOrigins.length > 0
     ? providedCorsOrigins
     : nodeEnv === "production"
-      ? DEFAULT_PRODUCTION_CORS_ORIGINS
+      ? []
       : DEFAULT_DEV_CORS_ORIGINS;
 
 const databaseUrl = String(process.env.DATABASE_URL || "").trim();
@@ -106,8 +114,10 @@ if (nodeEnv === "production") {
   if (corsOrigins.length === 0) {
     throw new Error("CORS_ORIGINS is required in production.");
   }
-  if (hasLocalOrigin(corsOrigins)) {
-    throw new Error("CORS_ORIGINS cannot include http/https localhost or 127.0.0.1 in production.");
+  if (hasDisallowedLocalOrigin({ origins: corsOrigins, allowMobileLocalhostOrigin: corsAllowMobileLocalhostOrigin })) {
+    throw new Error(
+      "CORS_ORIGINS cannot include http/https localhost or 127.0.0.1 in production unless CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true."
+    );
   }
   if (isPlaceholderSecret(jwtSecret)) {
     throw new Error("JWT_SECRET looks like a placeholder and is not allowed in production.");
@@ -127,5 +137,9 @@ module.exports = {
   authLockMinutes: clamp(toInt(process.env.AUTH_LOCK_MINUTES, 15), 5, 120),
   apiRateLimitWindowMs: clamp(toInt(process.env.API_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000), 60_000, 3_600_000),
   apiRateLimitMax: clamp(toInt(process.env.API_RATE_LIMIT_MAX, 300), 50, 5_000),
+  demoSwapFeeBps: clamp(toInt(process.env.DEMO_SWAP_FEE_BPS, 50), 0, 500),
+  demoSwapSpreadBps: clamp(toInt(process.env.DEMO_SWAP_SPREAD_BPS, 20), 0, 300),
+  corsAllowMobileLocalhostOrigin,
   corsOrigins
 };
+

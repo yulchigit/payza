@@ -9,6 +9,7 @@ const walletRoutes = require("./routes/walletRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodRoutes");
 const recipientRoutes = require("./routes/recipientRoutes");
+const marketRoutes = require("./routes/marketRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter } = require("./middleware/rateLimiters");
 
@@ -87,6 +88,21 @@ app.use(
 );
 app.use(express.json({ limit: "100kb" }));
 
+const isLocalWebOrigin = (origin) => {
+  const value = String(origin || "").trim().toLowerCase();
+  if (!value) return false;
+  if (value === "capacitor://localhost" || value === "ionic://localhost") return true;
+
+  try {
+    const parsed = new URL(value);
+    const isHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    const isLocalHost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    return isHttp && isLocalHost;
+  } catch (error) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(value);
+  }
+};
+
 // CORS FIRST (before rate limiting)
 app.use(
   cors({
@@ -96,6 +112,10 @@ app.use(
       }
 
       if (env.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (env.nodeEnv === "production" && env.corsAllowMobileLocalhostOrigin && isLocalWebOrigin(origin)) {
         return callback(null, true);
       }
 
@@ -121,6 +141,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/recipients", recipientRoutes);
+app.use("/api/market", marketRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

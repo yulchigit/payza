@@ -80,13 +80,26 @@ function isLikelyPlaceholderSecret(secret) {
   );
 }
 
+function isLikelyPlaceholderApiBaseUrl(urlValue) {
+  const value = String(urlValue || "").trim().toLowerCase();
+  if (!value) return true;
+  return (
+    value.includes("your-domain.com") ||
+    value.includes("example.com") ||
+    value.includes("placeholder") ||
+    value.includes("replace-me")
+  );
+}
+
+function toBool(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
 function isDisallowedLocalOrigin(origin) {
   const value = String(origin || "").trim().toLowerCase();
   if (!value) return false;
-
-  if (value === "capacitor://localhost" || value === "ionic://localhost") {
-    return false;
-  }
 
   try {
     const parsed = new URL(value);
@@ -98,12 +111,20 @@ function isDisallowedLocalOrigin(origin) {
   }
 }
 
-function hasLocalOrigin(originsValue) {
+function hasDisallowedLocalOrigin(originsValue, allowMobileLocalhostOrigin) {
   const origins = String(originsValue || "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  return origins.some((origin) => isDisallowedLocalOrigin(origin));
+  return origins.some((origin) => {
+    const value = String(origin || "").trim().toLowerCase();
+    if (!value) return false;
+    if (value === "capacitor://localhost" || value === "ionic://localhost") return false;
+    if (isDisallowedLocalOrigin(value)) {
+      return !allowMobileLocalhostOrigin;
+    }
+    return false;
+  });
 }
 
 const frontendEnv = parseEnvFile(frontendEnvPath);
@@ -119,13 +140,31 @@ if (!backendEnv) {
 
 if (frontendEnv) {
   const apiBaseUrl = String(frontendEnv.VITE_API_BASE_URL || "").trim();
+  const mobileApiBaseUrl = String(frontendEnv.VITE_MOBILE_API_BASE_URL || "").trim();
   warn(apiBaseUrl.length > 0, `VITE_API_BASE_URL is empty in ${frontendEnvName}.`);
+  warn(mobileApiBaseUrl.length > 0, `VITE_MOBILE_API_BASE_URL is empty in ${frontendEnvName}.`);
 
   if (strictProduction) {
     ensure(apiBaseUrl.startsWith("https://"), "Production requires VITE_API_BASE_URL to start with https://");
     ensure(
       !apiBaseUrl.includes("localhost") && !apiBaseUrl.includes("127.0.0.1"),
       "Production VITE_API_BASE_URL must not point to localhost."
+    );
+    ensure(
+      !isLikelyPlaceholderApiBaseUrl(apiBaseUrl),
+      "Production VITE_API_BASE_URL cannot be a placeholder domain."
+    );
+    ensure(
+      mobileApiBaseUrl.startsWith("https://"),
+      "Production requires VITE_MOBILE_API_BASE_URL to start with https://"
+    );
+    ensure(
+      !mobileApiBaseUrl.includes("localhost") && !mobileApiBaseUrl.includes("127.0.0.1"),
+      "Production VITE_MOBILE_API_BASE_URL must not point to localhost."
+    );
+    ensure(
+      !isLikelyPlaceholderApiBaseUrl(mobileApiBaseUrl),
+      "Production VITE_MOBILE_API_BASE_URL cannot be a placeholder domain."
     );
   }
 }
@@ -137,6 +176,7 @@ if (backendEnv) {
   const jwtAudience = String(backendEnv.JWT_AUDIENCE || "").trim();
   const corsOrigins = String(backendEnv.CORS_ORIGINS || "").trim();
   const nodeEnv = String(backendEnv.NODE_ENV || "development").trim().toLowerCase();
+  const allowMobileLocalhostOrigin = toBool(backendEnv.CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN, false);
 
   ensure(databaseUrl.length > 0, `DATABASE_URL is required in ${backendEnvName}.`);
   ensure(jwtSecret.length >= 32, `JWT_SECRET must be at least 32 characters in ${backendEnvName}.`);
@@ -148,8 +188,8 @@ if (backendEnv) {
     ensure(nodeEnv === "production", `Production release requires NODE_ENV=production in ${backendEnvName}.`);
     ensure(corsOrigins.length > 0, `Production release requires CORS_ORIGINS in ${backendEnvName}.`);
     ensure(
-      !hasLocalOrigin(corsOrigins),
-      "Production CORS_ORIGINS must not include http/https localhost or 127.0.0.1 origins."
+      !hasDisallowedLocalOrigin(corsOrigins, allowMobileLocalhostOrigin),
+      "Production CORS_ORIGINS must not include http/https localhost or 127.0.0.1 origins unless CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true."
     );
   } else {
     warn(

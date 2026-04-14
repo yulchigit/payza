@@ -3,13 +3,15 @@
 ## 1. Prepare secrets and env
 - Fill `.env.production`:
   - `VITE_API_BASE_URL=https://<your-backend-domain>/api`
+  - `VITE_MOBILE_API_BASE_URL=https://<your-backend-domain>/api`
 - Fill `backend/.env.production`:
   - `NODE_ENV=production`
   - `DATABASE_URL=postgresql://...`
   - `JWT_SECRET=<64+ random chars>`
   - `JWT_ISSUER=payza-api`
   - `JWT_AUDIENCE=payza-clients`
-  - `CORS_ORIGINS=https://<your-web-domain>,capacitor://localhost`
+  - `CORS_ORIGINS=https://<your-web-domain>,http://localhost,https://localhost,capacitor://localhost`
+  - `CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true`
 
 ## 2. Run local release gate
 - `npm run release:verify:prod`

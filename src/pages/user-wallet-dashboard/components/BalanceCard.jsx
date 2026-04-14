@@ -2,39 +2,45 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import StatusIndicatorSystem from '../../../components/ui/StatusIndicatorSystem';
 
-const BalanceCard = ({ 
-  title, 
-  icon, 
-  iconBg, 
-  iconColor, 
-  balances, 
-  connectedMethods 
+const BalanceCard = ({
+  title,
+  icon,
+  iconBg,
+  iconColor,
+  balances,
+  connectedMethods
 }) => {
   const formatAmount = (amount, currency) => {
-    // List of valid ISO 4217 currency codes
+    const normalizedCurrency = String(currency || '').toUpperCase();
     const validCurrencyCodes = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR'];
-    
-    // Check if currency is a valid ISO code
-    if (validCurrencyCodes?.includes(currency?.toUpperCase())) {
+
+    if (normalizedCurrency === 'UZS') {
+      return `${Number(amount || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} UZS`;
+    }
+
+    if (normalizedCurrency === 'BTC') {
+      return `${Number(amount || 0).toFixed(8)} BTC`;
+    }
+
+    if (validCurrencyCodes.includes(normalizedCurrency)) {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency,
+        currency: normalizedCurrency,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      })?.format(amount);
-    } else {
-      // For cryptocurrencies and other non-ISO currencies, format manually
-      return `${parseFloat(amount)?.toFixed(2)} ${currency}`;
+      }).format(amount);
     }
+
+    return `${Number(amount || 0).toFixed(4)} ${normalizedCurrency}`;
   };
 
   const calculateTotal = () => {
-    return balances?.reduce((sum, balance) => sum + balance?.amount, 0);
+    return balances?.reduce((sum, balance) => sum + Number(balance?.amount || 0), 0);
   };
 
   const calculatePercentage = (amount) => {
     const total = calculateTotal();
-    return total > 0 ? ((amount / total) * 100)?.toFixed(1) : 0;
+    return total > 0 ? ((Number(amount || 0) / total) * 100).toFixed(1) : 0;
   };
 
   return (

@@ -6,6 +6,8 @@ import BalanceCard from './components/BalanceCard';
 import ActionButtons from './components/ActionButtons';
 import RecentTransactions from './components/RecentTransactions';
 import QuickLinks from './components/QuickLinks';
+import PortfolioPerformanceChart from './components/PortfolioPerformanceChart';
+import FeaturedMarketsPanel from './components/FeaturedMarketsPanel';
 import apiClient from 'lib/apiClient';
 
 const UserWalletDashboard = () => {
@@ -22,8 +24,10 @@ const UserWalletDashboard = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const loadOverview = async () => {
-      setIsLoading(true);
+    const loadOverview = async ({ silent = false } = {}) => {
+      if (!silent) {
+        setIsLoading(true);
+      }
       setError('');
 
       try {
@@ -38,32 +42,38 @@ const UserWalletDashboard = () => {
 
         const normalized = {
           totalBalance: Number(data?.summary?.totalBalanceUsd || 0),
-          traditionalBalances: (data?.traditionalBalances || [])?.map((item) => ({
+          dailyChangePercent: Number(data?.summary?.dailyChangePercent || 0),
+          traditionalBalances: (data?.traditionalBalances || []).map((item) => ({
             currency: item?.currency,
             amount: Number(item?.amount || 0)
           })),
-          cryptoBalances: (data?.cryptoBalances || [])?.map((item) => ({
+          cryptoBalances: (data?.cryptoBalances || []).map((item) => ({
             currency: item?.currency,
             amount: Number(item?.amount || 0)
           })),
-          traditionalMethods: (data?.traditionalMethods || [])?.map((item) => ({
+          traditionalMethods: (data?.traditionalMethods || []).map((item) => ({
             name: item?.name,
             status: normalizeMethodStatus(item?.status)
           })),
-          cryptoMethods: (data?.cryptoMethods || [])?.map((item) => ({
+          cryptoMethods: (data?.cryptoMethods || []).map((item) => ({
             name: item?.name,
             status: normalizeMethodStatus(item?.status)
           })),
-          recentTransactions: (data?.recentTransactions || [])?.map((item) => ({
+          recentTransactions: (data?.recentTransactions || []).map((item) => ({
             id: item?.id,
             type: item?.type || 'send',
             description: item?.description || 'Transaction',
             method: item?.method || 'Wallet',
-            date: item?.date,
+            date: item?.date || item?.createdAt,
             amount: Number(item?.amount || 0),
-            currency: item?.currency || 'USD',
+            currency: item?.currency || item?.destinationCurrency || 'USD',
             status: item?.status || 'pending'
-          }))
+          })),
+          portfolioHistory: (data?.portfolioHistory || []).map((item) => ({
+            label: item?.label,
+            totalBalanceUsd: Number(item?.totalBalanceUsd || 0)
+          })),
+          featuredMarkets: data?.market?.featuredMarkets || []
         };
 
         if (isMounted) {
@@ -81,9 +91,13 @@ const UserWalletDashboard = () => {
     };
 
     loadOverview();
+    const intervalId = setInterval(() => {
+      loadOverview({ silent: true });
+    }, 20000);
 
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -91,11 +105,14 @@ const UserWalletDashboard = () => {
     () =>
       dashboardData || {
         totalBalance: 0,
+        dailyChangePercent: 0,
         traditionalBalances: [],
         cryptoBalances: [],
         traditionalMethods: [],
         cryptoMethods: [],
-        recentTransactions: []
+        recentTransactions: [],
+        portfolioHistory: [],
+        featuredMarkets: []
       },
     [dashboardData]
   );
@@ -105,14 +122,16 @@ const UserWalletDashboard = () => {
       <RoleBasedNavigation userRole="user" />
       <main className="pt-24 pb-12 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-8 md:mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Welcome!</h1>
-          <p className="text-base md:text-lg text-muted-foreground">Manage your payments and balances</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Investor Demo Wallet</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Live market references, demo balances, and exchange history</p>
         </div>
 
         <div className="space-y-6 md:space-y-8">
           <TotalBalanceCard
             totalBalance={safeData?.totalBalance}
-            currency="USD" />
+            currency="USD"
+            dailyChangePercent={safeData?.dailyChangePercent}
+          />
 
           {isLoading && (
             <div className="bg-card border border-border rounded-xl p-4 text-sm text-muted-foreground">
@@ -133,7 +152,8 @@ const UserWalletDashboard = () => {
               iconBg="bg-primary/10"
               iconColor="var(--color-primary)"
               balances={safeData?.traditionalBalances}
-              connectedMethods={safeData?.traditionalMethods} />
+              connectedMethods={safeData?.traditionalMethods}
+            />
 
             <BalanceCard
               title="Cryptocurrency"
@@ -141,8 +161,13 @@ const UserWalletDashboard = () => {
               iconBg="bg-accent/10"
               iconColor="var(--color-accent)"
               balances={safeData?.cryptoBalances}
-              connectedMethods={safeData?.cryptoMethods} />
+              connectedMethods={safeData?.cryptoMethods}
+            />
+          </div>
 
+          <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-6">
+            <PortfolioPerformanceChart data={safeData?.portfolioHistory} />
+            <FeaturedMarketsPanel markets={safeData?.featuredMarkets} />
           </div>
 
           <ActionButtons />
@@ -154,8 +179,8 @@ const UserWalletDashboard = () => {
           <QuickLinks />
         </div>
       </main>
-    </div>);
-
+    </div>
+  );
 };
 
 export default UserWalletDashboard;

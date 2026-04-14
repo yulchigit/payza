@@ -1,59 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Icon from '../../../components/AppIcon';
 
-const ExchangeRateCard = ({ cryptoType, fiatCurrency, exchangeRates }) => {
+const ExchangeRateCard = ({ fromCurrency, toCurrency, quote, history = [] }) => {
   const [timeRemaining, setTimeRemaining] = useState(30);
-  const [rateHistory, setRateHistory] = useState([]);
 
   useEffect(() => {
+    setTimeRemaining(30);
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) return 30;
-        return prev - 1;
-      });
+      setTimeRemaining((prev) => (prev <= 1 ? 30 : prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [quote?.generatedAt, fromCurrency, toCurrency]);
 
-  useEffect(() => {
-    const history = [
-      { time: '5m ago', rate: exchangeRates?.[cryptoType]?.[fiatCurrency] * 0.998, change: -0.2 },
-      { time: '10m ago', rate: exchangeRates?.[cryptoType]?.[fiatCurrency] * 1.001, change: 0.1 },
-      { time: '15m ago', rate: exchangeRates?.[cryptoType]?.[fiatCurrency] * 0.999, change: -0.1 },
-      { time: '20m ago', rate: exchangeRates?.[cryptoType]?.[fiatCurrency] * 1.002, change: 0.2 }
-    ];
-    setRateHistory(history);
-  }, [cryptoType, fiatCurrency, exchangeRates]);
+  const recentHistory = useMemo(() => {
+    const safeHistory = Array.isArray(history) ? history : [];
+    return safeHistory.slice(-4).reverse();
+  }, [history]);
 
-  const currentRate = exchangeRates?.[cryptoType]?.[fiatCurrency];
-  const trend = rateHistory?.length > 0 && rateHistory?.[0]?.change > 0 ? 'up' : 'down';
+  const currentRate = Number(quote?.marketRate || 0);
+  const effectiveRate = Number(quote?.effectiveRate || 0);
+  const trend = recentHistory.length > 1 && Number(recentHistory[0]?.price || 0) >= Number(recentHistory[1]?.price || 0) ? 'up' : 'down';
+  const latestDelta = recentHistory.length > 1
+    ? ((Number(recentHistory[0]?.price || 0) - Number(recentHistory[1]?.price || 0)) / Number(recentHistory[1]?.price || 1)) * 100
+    : 0;
 
   return (
     <div className="bg-card rounded-xl border border-border p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg md:text-xl font-semibold text-foreground">Current Exchange Rate</h3>
-        <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-          trend === 'up' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
-        }`}>
+        <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${trend === 'up' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
           <Icon name={trend === 'up' ? 'TrendingUp' : 'TrendingDown'} size={14} />
-          <span>{Math.abs(rateHistory?.[0]?.change || 0)}%</span>
+          <span>{Number.isFinite(latestDelta) ? `${latestDelta >= 0 ? '+' : ''}${latestDelta.toFixed(2)}%` : '0.00%'}</span>
         </div>
       </div>
       <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-6 mb-6">
         <div className="flex items-baseline gap-2 mb-2">
           <span className="text-3xl md:text-4xl font-bold text-foreground">
-            {currentRate?.toLocaleString()}
+            {currentRate ? currentRate.toLocaleString('en-US', { maximumFractionDigits: 8 }) : '0.00'}
           </span>
-          <span className="text-lg text-muted-foreground">{fiatCurrency}</span>
+          <span className="text-lg text-muted-foreground">{toCurrency}</span>
         </div>
-        <p className="text-sm text-muted-foreground">per 1 {cryptoType}</p>
+        <p className="text-sm text-muted-foreground mb-2">per 1 {fromCurrency}</p>
+        <p className="text-xs text-muted-foreground">
+          Effective rate after spread: {effectiveRate ? effectiveRate.toLocaleString('en-US', { maximumFractionDigits: 8 }) : '0.00'} {toCurrency}
+        </p>
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <Icon name="Clock" size={18} className="text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Rate Lock Duration</span>
+            <span className="text-sm font-medium text-foreground">Quote Refresh Window</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
@@ -78,14 +75,14 @@ const ExchangeRateCard = ({ cryptoType, fiatCurrency, exchangeRates }) => {
         <div className="border-t border-border pt-4">
           <h4 className="text-sm font-medium text-foreground mb-3">Recent Rate History</h4>
           <div className="space-y-2">
-            {rateHistory?.map((item, index) => (
-              <div key={index} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{item?.time}</span>
+            {recentHistory.map((item) => (
+              <div key={item?.timestamp} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{item?.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{item?.rate?.toLocaleString()}</span>
-                  <span className={`text-xs ${item?.change > 0 ? 'text-success' : 'text-error'}`}>
-                    {item?.change > 0 ? '+' : ''}{item?.change}%
+                  <span className="font-medium text-foreground">
+                    {Number(item?.price || 0).toLocaleString('en-US', { maximumFractionDigits: 8 })}
                   </span>
+                  <span className="text-xs text-muted-foreground">{toCurrency}</span>
                 </div>
               </div>
             ))}

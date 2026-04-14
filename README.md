@@ -31,9 +31,9 @@ Backend minimum env keys (`backend/.env`):
 ## Frontend API Base URL
 
 Priority:
-1. `VITE_API_BASE_URL` from `.env`
-2. localhost fallback: `http://localhost:5000/api`
-3. runtime fallback: `/api`
+1. Native mobile (`Capacitor`): `VITE_MOBILE_API_BASE_URL` (or non-local `VITE_API_BASE_URL`)
+2. Web local: `http://localhost:5000/api`
+3. Production fallback: `https://payza.up.railway.app/api`
 
 `.env` must not be committed. Use `.env.example` as template.
 
@@ -91,8 +91,9 @@ Backend tests now cover:
 
 `release:verify:prod` additionally enforces production-safe env constraints:
 - `CORS_ORIGINS` must be present
-- no localhost origins in CORS
+- localhost web origins are blocked unless `CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true`
 - no placeholder JWT secret
+- no placeholder `VITE_API_BASE_URL`
 
 `release:verify:prod` reads:
 - `.env.production`
@@ -112,10 +113,12 @@ Railway staging env template:
    - `JWT_SECRET=...` (min 32 chars)
    - `JWT_ISSUER=...`
    - `JWT_AUDIENCE=...`
-   - `CORS_ORIGINS=https://your-web-domain.com,capacitor://localhost`
+   - `CORS_ORIGINS=https://your-web-domain.com,http://localhost,https://localhost,capacitor://localhost`
+   - `CORS_ALLOW_MOBILE_LOCALHOST_ORIGIN=true` (required for Capacitor Android/iOS webview origin)
 4. Run backend migrations: `npm run api:migrate`.
 5. Set Vercel env:
    - `VITE_API_BASE_URL=https://your-backend-domain/api`
+   - `VITE_MOBILE_API_BASE_URL=https://your-backend-domain/api`
 6. Deploy frontend.
 
 Detailed operator checklist:

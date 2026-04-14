@@ -4,21 +4,27 @@ import StatusIndicatorSystem from '../../../components/ui/StatusIndicatorSystem'
 
 const RecentTransactions = ({ transactions }) => {
   const formatCurrency = (amount, currency) => {
-    // List of valid ISO 4217 currency codes
+    const normalizedCurrency = String(currency || '').toUpperCase();
     const validCurrencyCodes = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD', 'CAD', 'CHF', 'INR', 'SGD'];
-    
-    // Check if currency is a valid ISO code
-    if (validCurrencyCodes?.includes(currency?.toUpperCase())) {
+
+    if (normalizedCurrency === 'UZS') {
+      return `${Number(amount || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} UZS`;
+    }
+
+    if (normalizedCurrency === 'BTC') {
+      return `${Number(amount || 0).toFixed(8)} BTC`;
+    }
+
+    if (validCurrencyCodes.includes(normalizedCurrency)) {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency,
+        currency: normalizedCurrency,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      })?.format(amount);
-    } else {
-      // Handle cryptocurrencies and other non-ISO currencies
-      return `${amount?.toFixed(2)} ${currency}`;
+      }).format(amount);
     }
+
+    return `${Number(amount || 0).toFixed(4)} ${normalizedCurrency}`;
   };
 
   const formatDate = (date) => {
@@ -28,7 +34,7 @@ const RecentTransactions = ({ transactions }) => {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    })?.format(new Date(date));
+    }).format(new Date(date));
   };
 
   const getTransactionIcon = (type) => {
@@ -43,12 +49,24 @@ const RecentTransactions = ({ transactions }) => {
 
   const getTransactionColor = (type) => {
     const colors = {
-      send: 'text-error',
+      send: 'text-destructive',
       receive: 'text-success',
       convert: 'text-warning',
       withdrawal: 'text-primary'
     };
     return colors?.[type] || 'text-foreground';
+  };
+
+  const getAmountPrefix = (type) => {
+    if (type === 'send' || type === 'withdrawal') {
+      return '-';
+    }
+
+    if (type === 'receive') {
+      return '+';
+    }
+
+    return '';
   };
 
   return (
@@ -59,7 +77,6 @@ const RecentTransactions = ({ transactions }) => {
           View All
         </button>
       </div>
-      {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -87,25 +104,18 @@ const RecentTransactions = ({ transactions }) => {
                   <p className="text-sm text-foreground">{formatDate(transaction?.date)}</p>
                 </td>
                 <td className="py-4 px-4 text-right">
-                  <p className={`text-sm font-semibold ${transaction?.type === 'send' || transaction?.type === 'withdrawal' ? 'text-error' : 'text-success'}`}>
-                    {transaction?.type === 'send' || transaction?.type === 'withdrawal' ? '-' : '+'}
-                    {formatCurrency(transaction?.amount, transaction?.currency)}
+                  <p className={`text-sm font-semibold ${transaction?.type === 'send' || transaction?.type === 'withdrawal' ? 'text-destructive' : transaction?.type === 'receive' ? 'text-success' : 'text-warning'}`}>
+                    {getAmountPrefix(transaction?.type)}{formatCurrency(transaction?.amount, transaction?.currency)}
                   </p>
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <StatusIndicatorSystem
-                    status={transaction?.status}
-                    label={transaction?.status}
-                    showIcon={true}
-                    size="default"
-                  />
+                  <StatusIndicatorSystem status={transaction?.status} label={transaction?.status} showIcon={true} size="default" />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {/* Mobile Card View */}
       <div className="lg:hidden space-y-4">
         {transactions?.map((transaction) => (
           <div key={transaction?.id} className="bg-muted/30 rounded-lg p-4 border border-border">
@@ -119,18 +129,12 @@ const RecentTransactions = ({ transactions }) => {
                   <p className="text-xs text-muted-foreground">{transaction?.method}</p>
                 </div>
               </div>
-              <StatusIndicatorSystem
-                status={transaction?.status}
-                label=""
-                showIcon={true}
-                size="small"
-              />
+              <StatusIndicatorSystem status={transaction?.status} label="" showIcon={true} size="small" />
             </div>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">{formatDate(transaction?.date)}</p>
-              <p className={`text-base font-bold ${transaction?.type === 'send' || transaction?.type === 'withdrawal' ? 'text-error' : 'text-success'}`}>
-                {transaction?.type === 'send' || transaction?.type === 'withdrawal' ? '-' : '+'}
-                {formatCurrency(transaction?.amount, transaction?.currency)}
+              <p className={`text-base font-bold ${transaction?.type === 'send' || transaction?.type === 'withdrawal' ? 'text-destructive' : transaction?.type === 'receive' ? 'text-success' : 'text-warning'}`}>
+                {getAmountPrefix(transaction?.type)}{formatCurrency(transaction?.amount, transaction?.currency)}
               </p>
             </div>
           </div>

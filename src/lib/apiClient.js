@@ -1,9 +1,82 @@
 import axios from "axios";
+import { Capacitor } from "@capacitor/core";
+
+const DEFAULT_PUBLIC_API_BASE_URL = "https://payza.up.railway.app/api";
+
+const normalizeBaseUrl = (value) => String(value || "").trim().replace(/\/+$/, "");
+
+const isLikelyPlaceholderUrl = (value) => {
+  const lower = String(value || "").trim().toLowerCase();
+  if (!lower) return false;
+  return (
+    lower.includes("your-domain.com") ||
+    lower.includes("example.com") ||
+    lower.includes("replace-me") ||
+    lower.includes("placeholder")
+  );
+};
+
+const isLocalhostUrl = (value) => {
+  try {
+    const parsed = new URL(value);
+    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  } catch (error) {
+    return false;
+  }
+};
+
+const readConfiguredBaseUrl = (...candidates) => {
+  for (const candidate of candidates) {
+    const normalized = normalizeBaseUrl(candidate);
+    if (!normalized) continue;
+    if (isLikelyPlaceholderUrl(normalized)) continue;
+    return normalized;
+  }
+  return "";
+};
+
+const isNativeRuntime = () => {
+  if (Capacitor?.isNativePlatform?.()) {
+    return true;
+  }
+
+  if (typeof window === "undefined") return false;
+
+  const protocol = String(window.location.protocol || "").toLowerCase();
+  if (protocol === "capacitor:" || protocol === "ionic:") {
+    return true;
+  }
+
+  const capacitorPlatform = String(window.__CAPACITOR_PLATFORM__ || "").toLowerCase();
+  if (capacitorPlatform && capacitorPlatform !== "web") {
+    return true;
+  }
+
+  const hostname = String(window.location.hostname || "").toLowerCase();
+  const userAgent = String(window.navigator?.userAgent || "");
+  const isAndroidWebView = hostname === "localhost" && /;\s*wv\)/i.test(userAgent);
+
+  return isAndroidWebView;
+};
 
 const resolveApiBaseUrl = () => {
-  const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  if (configuredBaseUrl) {
-    return configuredBaseUrl;
+  const mobileBaseUrl = readConfiguredBaseUrl(import.meta.env.VITE_MOBILE_API_BASE_URL);
+  const webBaseUrl = readConfiguredBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+  if (isNativeRuntime()) {
+    if (mobileBaseUrl) {
+      return mobileBaseUrl;
+    }
+
+    if (webBaseUrl && !isLocalhostUrl(webBaseUrl)) {
+      return webBaseUrl;
+    }
+
+    return DEFAULT_PUBLIC_API_BASE_URL;
+  }
+
+  if (webBaseUrl) {
+    return webBaseUrl;
   }
 
   if (typeof window !== "undefined") {
@@ -15,10 +88,7 @@ const resolveApiBaseUrl = () => {
     }
   }
 
-  // If no VITE_API_BASE_URL provided and not running locally,
-  // default to the deployed backend URL so production builds work
-  // even when environment variable was not set.
-  return "https://payza.up.railway.app/api";
+  return DEFAULT_PUBLIC_API_BASE_URL;
 };
 
 const apiBaseUrl = resolveApiBaseUrl();
