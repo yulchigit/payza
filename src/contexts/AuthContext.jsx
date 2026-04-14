@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import apiClient, { setAuthToken } from "lib/apiClient";
+import { authTokenStorage } from "lib/tokenStorage";
 
 const TOKEN_KEY = "payza_access_token";
 const AuthContext = createContext(null);
@@ -30,9 +31,9 @@ export const AuthProvider = ({ children }) => {
 
   const persistSession = (nextToken) => {
     if (nextToken) {
-      sessionStorage.setItem(TOKEN_KEY, nextToken);
+      authTokenStorage.setItem(TOKEN_KEY, nextToken);
     } else {
-      sessionStorage.removeItem(TOKEN_KEY);
+      authTokenStorage.removeItem(TOKEN_KEY);
     }
   };
 
@@ -51,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     let isMounted = true;
 
     const bootstrap = async () => {
-      const storedToken = sessionStorage.getItem(TOKEN_KEY);
+      const storedToken = authTokenStorage.getItem(TOKEN_KEY);
       if (!storedToken) {
         if (isMounted) setIsBootstrapping(false);
         return;
