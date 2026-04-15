@@ -169,8 +169,8 @@ if (nodeEnv === "production" && req.header("x-forwarded-proto") !== "https") {
 ```
 
 ### Certificate Pinning
-- Not implemented (Railway/Vercel handle certs)
-- Enable if hosting on custom domain
+- Not implemented (Render/Vercel handle certs)
+# Enable if hosting on custom domain
 
 ---
 
@@ -199,27 +199,22 @@ if (nodeEnv === "production" && req.header("x-forwarded-proto") !== "https") {
 ```
 
 ### Search Production Logs
-```bash
-# Failed logins
-railway logs | grep '"isSuccess":false'
+Open the Render Dashboard → Services → payza-backend → Logs and use the search/filter to find events. Example searches:
 
-# Specific user
-railway logs | grep "user@example.com"
-
-# HTTP errors
-railway logs | grep '"status":50'
+```
+"isSuccess":false
+user@example.com
+"status":50
 ```
 
 ---
 
 ## 8. Data Protection
 
-### Encryption in Transit
-- TLS 1.2+ on all endpoints (Railway enforced)
+- TLS 1.2+ on all endpoints (Render enforced)
 - No plain-text passwords in logs/errors
 
-### Encryption at Rest
-- Database: Railway PostgreSQL (encrypted storage)
+- Database: Render PostgreSQL (encrypted storage)
 - Tokens: JWT signed (integrity verified, not encrypted)
 
 ### Sensitive Data Handling

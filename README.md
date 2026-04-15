@@ -33,7 +33,7 @@ Backend minimum env keys (`backend/.env`):
 Priority:
 1. Native mobile (`Capacitor`): `VITE_MOBILE_API_BASE_URL` (or non-local `VITE_API_BASE_URL`)
 2. Web local: `http://localhost:5000/api`
-3. Production fallback: `https://payza.up.railway.app/api`
+3. Production fallback: `https://payza-backend.onrender.com/api`
 
 `.env` must not be committed. Use `.env.example` as template.
 
@@ -99,14 +99,14 @@ Backend tests now cover:
 - `.env.production`
 - `backend/.env.production`
 
-Railway staging env template:
-- `backend/.env.railway.staging.example`
-- Railway'da `PORT` ni qo'lda fixed qilmang (platform o'zi beradi).
+Render staging env template:
+- `backend/.env.render.example`
+- Render'da `PORT` ni qo'lda fixed qilmang (platform o'zi beradi).
 
 ## Production Deploy Order
 
 1. Prepare PostgreSQL production database.
-2. Deploy backend (Railway/Render/Fly/VM or Docker).
+2. Deploy backend (Render/Fly/VM or Docker).
 3. Set backend envs:
    - `NODE_ENV=production`
    - `DATABASE_URL=...`

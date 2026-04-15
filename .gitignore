@@ -13,7 +13,7 @@ vite.config.*s.*
 backend/.env*
 !backend/.env.example
 !backend/.env.production.example
-!backend/.env.railway.staging.example
+!backend/.env.render.example
 android/key.properties
 android/*.jks
 android/*.keystore

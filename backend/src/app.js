@@ -111,19 +111,26 @@ app.use(
         return callback(null, true);
       }
 
-      if (env.corsOrigins.includes(origin)) {
+          if (env.corsOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      if (env.nodeEnv === "production" && env.corsAllowMobileLocalhostOrigin && isLocalWebOrigin(origin)) {
-        return callback(null, true);
+      if (env.nodeEnv === "production" && env.corsAllowMobileLocalhostOrigin) {
+        if (isLocalWebOrigin(origin)) {
+          return callback(null, true);
+        }
+
+        if (origin === "capacitor://localhost" || origin === "ionic://localhost") {
+          return callback(null, true);
+        }
       }
 
       if (env.nodeEnv !== "production" && env.corsOrigins.length === 0) {
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      console.warn(`[CORS] Rejected origin: ${origin} - allowed: ${env.corsOrigins.join(',')} - allowMobileLocalhost:${env.corsAllowMobileLocalhostOrigin}`);
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],

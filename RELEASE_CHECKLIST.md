@@ -41,7 +41,7 @@ Completed full-stack production hardening across 5 sequential directions:
 ✅ POST https://payza-gray.vercel.app/auth/register → 201 Created
 ✅ POST https://payza-gray.vercel.app/auth/login → 200 OK
 ✅ OPTIONS /api/auth/register → 200 with CORS headers
-✅ GET https://payza.up.railway.app/api/health → 200 with DB status
+✅ GET https://payza-backend.onrender.com/api/health → 200 with DB status
 ```
 
 ### Files Modified
@@ -55,7 +55,7 @@ Completed full-stack production hardening across 5 sequential directions:
 ## 2. Monitoring Setup ✅
 
 ### Infrastructure
-- **Logging:** Structured JSON logs (Railway platform)
+- **Logging:** Structured JSON logs (Render platform)
 - **Request Tracing:** Request IDs for end-to-end tracking
 - **Health Check:** `/api/health` endpoint
 - **Error Handling:** Centralized global error handler
@@ -78,18 +78,12 @@ Completed full-stack production hardening across 5 sequential directions:
 ```
 
 ### Monitoring Commands
-```bash
-# Live logs
-railway logs
+Open the Render Dashboard → Services → payza-backend → Logs and use the search/filter to find errors. Example searches:
 
-# Filter by error level
-railway logs | grep '"level":"error"'
-
-# Specific user activity
-railway logs | grep "user@example.com"
-
-# All failed logins
-railway logs | grep '"isSuccess":false'
+```
+"level":"error"
+status:500
+user@example.com
 ```
 
 ### Health Check
@@ -330,10 +324,10 @@ adb shell pm uninstall com.payza.app
 | Component | Environment | Status |
 |-----------|-------------|--------|
 | Frontend | Vercel | ✅ Production (payza-gray.vercel.app) |
-| Backend | Railway | ✅ Production (payza.up.railway.app) |
-| Database | Railway PostgreSQL | ✅ Production |
+| Backend | Render | ✅ Production (payza-backend.onrender.com) |
+| Database | Render PostgreSQL | ✅ Production |
 | Android | Local | ✅ Built & Signed (ready for distribution) |
-| Monitoring | Railway | ✅ Active (structured logging) |
+| Monitoring | Render | ✅ Active (structured logging) |
 | Security | All layers | ✅ Hardened |
 | Performance | Optimized | ✅ Lazy-loading active |
 
@@ -403,11 +397,11 @@ adb shell pm uninstall com.payza.app
 - **Health Check Response:** <50ms
 - **Auth Response:** 200-500ms (Bcrypt + JWT signing)
 - **Rate Limit Coverage:** 4 tiers (Auth, Password Reset, General API, DDoS)
-- **Database Connections:** Pooled (Railway managed)
+- **Database Connections:** Pooled (Render managed)
 
 ### Frontend Performance
 - **Initial Load:** ~2-3 seconds (lazy-loaded)
-- **API Response:** <200ms (Railway + Vercel edge)
+- **API Response:** <200ms (Render + Vercel edge)
 - **Chart Load (lazy):** ~500ms (Recharts + D3)
 - **Total Bundle (gzip):** ~390 kB (optimized)
 
@@ -468,10 +462,10 @@ git revert <commit-hash>
 git push origin main  # Auto-redeploy
 ```
 
-**Backend (Railway):**
+**Backend (Render):**
 ```bash
 # Rollback database (if needed)
-# Railway: Manual snapshot restore from console
+# Render: Manual snapshot restore from dashboard
 # Code: Same as frontend (git revert + push)
 ```
 

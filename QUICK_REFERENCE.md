@@ -21,9 +21,9 @@
 | Service | URL | Status |
 |---------|-----|--------|
 | **Frontend** | https://payza-gray.vercel.app | ✅ Live |
-| **Backend API** | https://payza.up.railway.app/api | ✅ Live |
-| **Health Check** | https://payza.up.railway.app/api/health | ✅ Live |
-| **Database** | Railway PostgreSQL | ✅ Live |
+| **Backend API** | https://payza-backend.onrender.com/api | ✅ Live |
+| **Health Check** | https://payza-backend.onrender.com/api/health | ✅ Live |
+| **Database** | Render PostgreSQL | ✅ Live |
 
 ---
 
@@ -55,15 +55,16 @@
 ## 📊 Monitoring
 
 ### View Logs
-```bash
-railway logs                    # All logs
-railway logs | grep "error"     # Errors only
-railway logs | grep "user@ex"   # Specific user
+Open the Render Dashboard → Services → payza-backend → Logs and use the search/filter to find errors:
+```text
+Search: "level":"error"
+Search: status: 500
+Search: user@example.com
 ```
 
 ### Health Check
 ```bash
-curl https://payza.up.railway.app/api/health
+curl https://payza-backend.onrender.com/api/health
 # {"status": "healthy", "database": "connected", ...}
 ```
 
@@ -187,7 +188,7 @@ adb shell am start -n com.payza.app/.MainActivity
 | Blank white screen | Check browser console (`adb logcat` for APK) |
 | Build fails | Run `cd android && ./gradlew clean` |
 | APK won't install | Enable Unknown Sources, check version code |
-| API timeout | Verify backend on Railway is running |
+| API timeout | Verify backend on Render is running |
 | Charts not loading | Check network tab, lazy-loading may be slow |
 
 ---
@@ -216,7 +217,7 @@ Before going live:
 - [ ] Verify rate limiting working
 - [ ] Check APK installs correctly
 - [ ] Review security headers (CSP, HSTS)
-- [ ] Backup database (Railway)
+- [ ] Backup database (Render PostgreSQL)
 - [ ] Set up Firebase Analytics
 - [ ] Create support email
 
@@ -233,7 +234,7 @@ Before going live:
 | Android SDK | 12+ (API 31+) |
 | Gradle | 9.2.1 |
 | PostgreSQL | 14+ |
-| Railway | Managed |
+| Render | Managed |
 | Vercel | Managed |
 
 ---
@@ -255,8 +256,8 @@ When ready for version 1.1.0:
 
 ## 📊 Metrics Dashboard
 
-See **[MONITORING.md](./MONITORING.md)** for:
-- How to access Railway logs
+- See **[MONITORING.md](./MONITORING.md)** for:
+- How to access Render logs
 - How to track request performance
 - How to monitor error rates
 - How to set up alerts
@@ -275,7 +276,7 @@ git log --oneline | head -5
 git revert <commit-hash>
 git push origin main
 
-# Wait for auto-deploy on Vercel/Railway
+# Wait for auto-deploy on Vercel/Render
 # Verify: https://payza-gray.vercel.app
 ```
 

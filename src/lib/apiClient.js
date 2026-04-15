@@ -39,32 +39,41 @@ const resolveApiBaseUrl = () => {
   const mobileBaseUrl = readConfiguredBaseUrl(import.meta.env.VITE_MOBILE_API_BASE_URL);
   const webBaseUrl = readConfiguredBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
-  if (isNativeRuntime()) {
-    if (mobileBaseUrl) {
-      return mobileBaseUrl;
+  const isNative = isNativeRuntime();
+  const resolved = (() => {
+    if (isNative) {
+      if (mobileBaseUrl) {
+        return mobileBaseUrl;
+      }
+
+      if (webBaseUrl && !isLocalhostUrl(webBaseUrl)) {
+        return webBaseUrl;
+      }
+
+      return DEFAULT_PUBLIC_API_BASE_URL;
     }
 
-    if (webBaseUrl && !isLocalhostUrl(webBaseUrl)) {
+    if (webBaseUrl) {
       return webBaseUrl;
     }
 
-    return DEFAULT_PUBLIC_API_BASE_URL;
-  }
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
 
-  if (webBaseUrl) {
-    return webBaseUrl;
-  }
-
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
-
-    if (isLocalHost) {
-      return "http://localhost:5000/api";
+      if (isLocalHost) {
+        return "http://localhost:5000/api";
+      }
     }
+
+    return DEFAULT_PUBLIC_API_BASE_URL;
+  })();
+
+  if (import.meta.env.DEV) {
+    console.debug("[apiClient] resolved API base URL", { resolved, isNative, mobileBaseUrl, webBaseUrl });
   }
 
-  return DEFAULT_PUBLIC_API_BASE_URL;
+  return resolved;
 };
 
 const apiBaseUrl = resolveApiBaseUrl();

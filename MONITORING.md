@@ -32,51 +32,29 @@ All logs are JSON-structured for easy parsing by monitoring tools:
 
 ## Accessing Logs
 
-### Railway Dashboard
+### Render Dashboard
 
-1. **Open Railway Dashboard**
-   - Go to https://railway.app → Select your PayZa project
-   - Click on the backend service (`payza-backend` or similar)
+1. **Open Render Dashboard**
+  - Open the Render Dashboard and select your PayZa project
+  - Click on the backend service (`payza-backend` or similar)
 
 2. **View Live Logs**
-   - Select "Logs" tab
-   - Logs stream in real-time (JSON formatted)
-   - Use Railway's search/filter to find errors:
-     - Search: `"level":"error"` 
-     - Search: `status: 500`
-     - Search: specific `requestId`
-
-3. **Railway CLI (Local Access)**
-   ```bash
-   # Install Railway CLI if not present
-   npm install -g @railway/cli
-
-   # Login to Railway
-   railway login
-
-   # View live logs locally
-   railway logs -f
-
-   # Search logs (pipe to grep)
-   railway logs | grep "error"
-   ```
+  - Select the "Logs" tab
+  - Logs stream in real-time (JSON formatted)
+  - Use the dashboard search/filter to find errors:
+    - Search: `"level":"error"`
+    - Search: `status: 500`
+    - Search: specific `requestId`
 
 ### Query Recent Errors
 
-**Find all 500 errors in last hour:**
-```bash
-railway logs | grep '"status":500'
-```
+Use the Render Dashboard log search to filter recent errors:
 
-**Find specific user's failed requests:**
-```bash
-railway logs | grep "user@email.com"
-```
+**Find all 500 errors in last hour:** Search for `status:500`
 
-**Find slow requests (>2s):**
-```bash
-railway logs | grep -o '"duration":"[^"]*"' | grep -E '"[3-9][0-9]{3,}ms'
-```
+**Find specific user's failed requests:** Search for the user's email or `userId`
+
+**Find slow requests (>2s):** Search for `duration` values greater than `2000ms` using the dashboard filters
 
 ---
 
@@ -85,7 +63,7 @@ railway logs | grep -o '"duration":"[^"]*"' | grep -E '"[3-9][0-9]{3,}ms'
 Monitor service health at:
 
 ```
-GET https://payza.up.railway.app/api/health
+GET https://payza-backend.onrender.com/api/health
 ```
 
 **Response:**
@@ -131,23 +109,23 @@ Monitor frontend errors via browser console:
 
 ---
 
-## Setting Up Alerts (Railway)
+### Setting Up Alerts (Render)
 
 ### Email Alerts
 
-1. Railway Dashboard → Project Settings → Notifications
+1. Open Render Dashboard → Services → payza-backend → Alerts/Notifications
 2. Enable "Email" notifications for:
-   - Deployment failures
-   - Health check failures
-3. Set alert threshold (CPU, Memory usage)
+  - Deployment failures
+  - Health check failures
+3. Set alert thresholds (CPU, memory, or health check failures)
 
 ### Manual Monitoring Script
 
-Create `monitor.js` locally to poll health endpoint:
+Create `monitor.js` locally to poll the health endpoint:
 
 ```bash
 # Run every 5 minutes to monitor health
-* * * * * curl -s https://payza.up.railway.app/api/health | grep -q '"success":true' || curl -X POST https://your-webhook-url -d "PayZa backend health check failed"
+* * * * * curl -s https://payza-backend.onrender.com/api/health | grep -q '"success":true' || curl -X POST https://your-webhook-url -d "PayZa backend health check failed"
 ```
 
 ---
@@ -162,7 +140,7 @@ Create `monitor.js` locally to poll health endpoint:
   "error": "connect ECONNREFUSED"
 }
 ```
-**Action:** Check Railway PostgreSQL service status
+**Action:** Check Render PostgreSQL service status
 
 ### 2. CORS Errors (405 Method Not Allowed)
 ```json
@@ -198,15 +176,11 @@ Create `monitor.js` locally to poll health endpoint:
 
 ---
 
-## Performance Monitoring
+### Performance Monitoring
 
 ### Request Duration Tracking
 
-Watch for slow endpoints (>500ms):
-
-```bash
-railway logs | grep -oP '"duration":"([^"]*)"' | sort -V | tail -20
-```
+Watch for slow endpoints (>500ms) using the Render Dashboard logs and filters (search by `duration`).
 
 High-latency endpoints may indicate:
 - Slow database queries
@@ -234,7 +208,7 @@ if (duration > 100) {
 
 ## Environment Variables for Monitoring
 
-Ensure these are set in Railway project:
+Ensure these are set in the Render service:
 
 ```bash
 NODE_ENV=production
@@ -249,7 +223,7 @@ API_RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
 
 ## Next Steps
 
-- [ ] Set up email alerts in Railway
+- [ ] Set up email alerts in Render
 - [ ] Create monitoring dashboard (Grafana/DataDog optional)
 - [ ] Configure log aggregation if scaling
 - [ ] Test health check regularly
@@ -260,7 +234,7 @@ API_RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
 ## Support
 
 For issues:
-1. Check Railway logs: `railway logs -f`
-2. Health endpoint: `curl https://payza.up.railway.app/api/health`
+1. Check Render logs: Open the Render Dashboard → Services → payza-backend → Logs (use search/filter)
+2. Health endpoint: `curl https://payza-backend.onrender.com/api/health`
 3. Review MONITORING.md (this file)
 4. Contact DevOps team

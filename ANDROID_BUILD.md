@@ -14,7 +14,7 @@ PayZa is built as a web app using React + Vite, wrapped in Capacitor for native 
 **Architecture:**
 - Frontend: React TypeScript web app
 - Native Bridge: Capacitor (Cordova compatible)
-- Backend: Express API (Railway)
+- Backend: Express API (Render)
 - Distribution: Google Play Store & direct APK
 
 ---

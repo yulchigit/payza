@@ -52,7 +52,7 @@ You asked for 5 sequential directions completed, each with Git push:
 **Outcome:** Comprehensive monitoring infrastructure
 
 ### Features Implemented
-1. **Structured JSON Logging** — Railway platform ingestion-ready
+1. **Structured JSON Logging** — Render platform ingestion-ready
 2. **Request ID Tracing** — End-to-end correlation
 3. **Global Error Handler** — Centralized error logging
 4. **Health Endpoint** — `/api/health` for status monitoring
@@ -294,11 +294,11 @@ Config:
 - **Status:** ✅ Deployed & optimized
 - **Build:** Vite + React (lazy-loaded routes & charts)
 
-### Backend
-- **URL:** https://payza.up.railway.app/api
+- ### Backend
+- **URL:** https://payza-backend.onrender.com/api
 - **Status:** ✅ Hardened & monitored
 - **Health:** GET /api/health → Operational
-- **Logging:** Railway structured logs active
+- **Logging:** Render structured logs active
 
 ### Android
 - **Package:** com.payza.app
