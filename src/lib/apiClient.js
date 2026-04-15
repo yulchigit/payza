@@ -1,7 +1,7 @@
 import axios from "axios";
 import { isNativeRuntime } from "lib/runtime";
 
-const DEFAULT_PUBLIC_API_BASE_URL = "https://payza.up.railway.app/api";
+const DEFAULT_PUBLIC_API_BASE_URL = "https://payza-backend.onrender.com/api";
 
 const normalizeBaseUrl = (value) => String(value || "").trim().replace(/\/+$/, "");
 

@@ -73,7 +73,7 @@ app.use(
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", process.env.NODE_ENV === "production" ? "https://payza.up.railway.app" : "*"]
+        connectSrc: ["'self'", process.env.NODE_ENV === "production" ? process.env.BACKEND_DOMAIN || "https://localhost" : "*"]
       }
     },
     hsts: {
