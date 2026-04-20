@@ -13,7 +13,7 @@ test.afterEach(() => {
   global.fetch = originalFetch;
 });
 
-test("getMarketSnapshot combines Binance and CBU reference rates", async () => {
+test("getMarketSnapshot combines CoinGecko and CBU reference rates", async () => {
   global.fetch = async (url) => {
     if (url.includes("cbu.uz")) {
       return createJsonResponse([
@@ -24,17 +24,16 @@ test("getMarketSnapshot combines Binance and CBU reference rates", async () => {
       ]);
     }
 
-    if (url.includes("ticker/24hr")) {
+    if (url.includes("/coins/bitcoin?")) {
       return createJsonResponse({
-        symbol: "BTCUSDT",
-        lastPrice: "70000.00",
-        openPrice: "69000.00",
-        highPrice: "71000.00",
-        lowPrice: "68000.00",
-        volume: "100.0",
-        quoteVolume: "7000000.0",
-        priceChangePercent: "1.45",
-        closeTime: 1776143880755
+        market_data: {
+          current_price: { usd: 70000.0 },
+          high_24h: { usd: 71000.0 },
+          low_24h: { usd: 68000.0 },
+          price_change_percentage_24h: 1.45,
+          price_change_24h: { usd: 1000.0 },
+          total_volume: { usd: 100.0 }
+        }
       });
     }
 
@@ -62,25 +61,30 @@ test("getAssetHistory converts BTC history into UZS", async () => {
       ]);
     }
 
-    if (url.includes("ticker/24hr")) {
+    if (url.includes("/coins/bitcoin?")) {
       return createJsonResponse({
-        symbol: "BTCUSDT",
-        lastPrice: "75000.00",
-        openPrice: "74000.00",
-        highPrice: "76000.00",
-        lowPrice: "73000.00",
-        volume: "100.0",
-        quoteVolume: "7500000.0",
-        priceChangePercent: "1.2",
-        closeTime: 1776143880755
+        market_data: {
+          current_price: { usd: 75000.0 },
+          high_24h: { usd: 76000.0 },
+          low_24h: { usd: 73000.0 },
+          price_change_percentage_24h: 1.2,
+          price_change_24h: { usd: 1000.0 },
+          total_volume: { usd: 100.0 }
+        }
       });
     }
 
-    if (url.includes("klines")) {
-      return createJsonResponse([
-        [1776100000000, "74000.00", "74200.00", "73800.00", "74100.00", "10", 1776103599999],
-        [1776103600000, "74100.00", "74400.00", "73900.00", "74300.00", "12", 1776107199999]
-      ]);
+    if (url.includes("market_chart")) {
+      return createJsonResponse({
+        prices: [
+          [1776103599999, 74100.0],
+          [1776107199999, 74300.0]
+        ],
+        total_volumes: [
+          [1776103599999, 10],
+          [1776107199999, 12]
+        ]
+      });
     }
 
     throw new Error(`Unexpected url: ${url}`);

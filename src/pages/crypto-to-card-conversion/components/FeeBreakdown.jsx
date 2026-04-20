@@ -69,7 +69,7 @@ const FeeBreakdown = ({ quote }) => {
           <div>
             <p className="text-sm font-medium text-foreground mb-1">Investor Demo Transparency</p>
             <p className="text-xs text-muted-foreground">
-              Pricing is based on Binance public market data and CBU FX references, then adjusted with the demo fee and spread configured for PayZa.
+              Pricing is based on CoinGecko public market data and CBU FX references, then adjusted with the demo fee and spread configured for PayZa.
             </p>
           </div>
         </div>

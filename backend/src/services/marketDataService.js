@@ -1,7 +1,7 @@
 const { normalizeCurrency } = require("../utils/currency");
 const { decimalToUnits, unitsToDecimal, multiplyUnits, divideUnits } = require("../utils/decimal");
 
-const BINANCE_REST_BASE_URL = "https://api.binance.com";
+const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
 const CBU_USD_RATE_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/USD/";
 const ONE = decimalToUnits("1");
 
@@ -52,45 +52,115 @@ const getUsdToUzsRate = async () => {
   };
 };
 
-const getBinance24hrTicker = async (symbol) => {
-  const payload = await withTimeout(`${BINANCE_REST_BASE_URL}/api/v3/ticker/24hr?symbol=${symbol}`);
+// CoinGecko-based ticker and simple kline generation (avoids blocked exchange APIs)
+const COIN_ID = "bitcoin";
+const VS_CURRENCY = "usd";
 
-  if (!payload?.symbol || !payload?.lastPrice) {
-    throw new Error(`Failed to load Binance ticker for ${symbol}.`);
+const getCoinGeckoTicker = async () => {
+  const payload = await withTimeout(
+    `${COINGECKO_BASE_URL}/coins/${COIN_ID}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
+  );
+
+  const md = payload?.market_data;
+  if (!md || typeof md.current_price?.[VS_CURRENCY] === "undefined") {
+    throw new Error("Failed to load CoinGecko ticker for bitcoin.");
   }
 
+  const last = Number(md.current_price[VS_CURRENCY]);
+  const priceChange24 = typeof md.price_change_24h === "object" ? md.price_change_24h[VS_CURRENCY] : md.price_change_24h;
+  const open = typeof priceChange24 === "number" ? last - priceChange24 : md.current_price[VS_CURRENCY];
+
   return {
-    symbol: payload.symbol,
-    lastPrice: String(payload.lastPrice),
-    openPrice: String(payload.openPrice),
-    highPrice: String(payload.highPrice),
-    lowPrice: String(payload.lowPrice),
-    volume: String(payload.volume),
-    quoteVolume: String(payload.quoteVolume),
-    priceChangePercent: String(payload.priceChangePercent),
-    closeTime: payload.closeTime
+    symbol: "BTCUSDT",
+    lastPrice: String(Number(last).toFixed(2)),
+    openPrice: String(Number(open).toFixed(2)),
+    highPrice: String(Number(md.high_24h?.[VS_CURRENCY] ?? last).toFixed(2)),
+    lowPrice: String(Number(md.low_24h?.[VS_CURRENCY] ?? last).toFixed(2)),
+    volume: String(md.total_volume?.[VS_CURRENCY] ?? 0),
+    quoteVolume: String(md.total_volume?.[VS_CURRENCY] ?? 0),
+    priceChangePercent: String(md.price_change_percentage_24h ?? 0),
+    closeTime: Date.now()
   };
 };
 
-const getBinanceKlines = async ({ symbol, interval = "1h", limit = 24 }) => {
-  const payload = await withTimeout(
-    `${BINANCE_REST_BASE_URL}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
-  );
+const parseIntervalToHours = (interval) => {
+  if (typeof interval !== 'string') return 1;
+  if (interval.endsWith('h')) return Number(interval.slice(0, -1)) || 1;
+  if (interval.endsWith('d')) return (Number(interval.slice(0, -1)) || 1) * 24;
+  return 1;
+};
 
-  if (!Array.isArray(payload)) {
-    throw new Error(`Failed to load Binance klines for ${symbol}.`);
+const getCoinGeckoKlines = async ({ symbol, interval = "1h", limit = 24 }) => {
+  // We approximate candles from CoinGecko's market_chart prices
+  const hoursPerInterval = parseIntervalToHours(interval);
+  const days = Math.max(1, Math.ceil((limit * hoursPerInterval) / 24));
+
+  const payload = await withTimeout(`${COINGECKO_BASE_URL}/coins/${COIN_ID}/market_chart?vs_currency=${VS_CURRENCY}&days=${days}`);
+
+  const prices = Array.isArray(payload?.prices) ? payload.prices : [];
+  const volumes = Array.isArray(payload?.total_volumes) ? payload.total_volumes : [];
+
+  const lastTimestamp = prices.length ? prices[prices.length - 1][0] : Date.now();
+  const intervalMs = hoursPerInterval * 60 * 60 * 1000;
+  const earliestBucketStart = lastTimestamp - limit * intervalMs;
+
+  const klines = [];
+  let pIdx = 0;
+
+  for (let i = 0; i < limit; i++) {
+    const bucketStart = earliestBucketStart + i * intervalMs;
+    const bucketEnd = bucketStart + intervalMs;
+
+    const bucketPrices = [];
+    let bucketVolume = 0;
+
+    while (pIdx < prices.length && prices[pIdx][0] <= bucketEnd) {
+      const [ts, price] = prices[pIdx];
+      if (ts > bucketStart && ts <= bucketEnd) {
+        bucketPrices.push(price);
+      }
+      pIdx++;
+    }
+
+    if (bucketPrices.length === 0) {
+      // fallback: use last known price before bucketEnd or the first available
+      const fallbackIdx = Math.max(0, Math.min(prices.length - 1, pIdx - 1));
+      const fallbackPrice = prices[fallbackIdx]?.[1] ?? 0;
+      klines.push({
+        openTime: bucketStart,
+        closeTime: bucketEnd,
+        openPrice: String(fallbackPrice),
+        highPrice: String(fallbackPrice),
+        lowPrice: String(fallbackPrice),
+        closePrice: String(fallbackPrice),
+        volume: String(0),
+        label: formatLabel(bucketStart, interval)
+      });
+      continue;
+    }
+
+    const openPrice = bucketPrices[0];
+    const closePrice = bucketPrices[bucketPrices.length - 1];
+    const highPrice = Math.max(...bucketPrices);
+    const lowPrice = Math.min(...bucketPrices);
+
+    // approximate volume from volumes array by finding an entry within the bucket
+    const volEntry = volumes.find((v) => v[0] > bucketStart && v[0] <= bucketEnd);
+    bucketVolume = volEntry ? volEntry[1] : 0;
+
+    klines.push({
+      openTime: bucketStart,
+      closeTime: bucketEnd,
+      openPrice: String(openPrice),
+      highPrice: String(highPrice),
+      lowPrice: String(lowPrice),
+      closePrice: String(closePrice),
+      volume: String(bucketVolume),
+      label: formatLabel(bucketStart, interval)
+    });
   }
 
-  return payload.map((entry) => ({
-    openTime: entry[0],
-    closeTime: entry[6],
-    openPrice: String(entry[1]),
-    highPrice: String(entry[2]),
-    lowPrice: String(entry[3]),
-    closePrice: String(entry[4]),
-    volume: String(entry[5]),
-    label: formatLabel(entry[0], interval)
-  }));
+  return klines;
 };
 
 const buildSupportedUsdRates = ({ usdToUzs, btcToUsdt }) => {
@@ -120,7 +190,7 @@ const buildFeaturedMarkets = ({ usdToUzs, btcTicker }) => {
       highPrice: btcTicker.highPrice,
       lowPrice: btcTicker.lowPrice,
       priceChangePercent: btcTicker.priceChangePercent,
-      source: "Binance"
+      source: "CoinGecko"
     },
     {
       symbol: "USDT/UZS",
@@ -142,7 +212,7 @@ const buildFeaturedMarkets = ({ usdToUzs, btcTicker }) => {
       highPrice: unitsToDecimal(multiplyUnits(decimalToUnits(btcTicker.highPrice), usdToUzsUnits)),
       lowPrice: unitsToDecimal(multiplyUnits(decimalToUnits(btcTicker.lowPrice), usdToUzsUnits)),
       priceChangePercent: btcTicker.priceChangePercent,
-      source: "Binance x CBU"
+      source: "CoinGecko x CBU"
     }
   ];
 };
@@ -150,7 +220,7 @@ const buildFeaturedMarkets = ({ usdToUzs, btcTicker }) => {
 const getMarketSnapshot = async () => {
   const [fxRate, btcTicker] = await Promise.all([
     getUsdToUzsRate(),
-    getBinance24hrTicker("BTCUSDT")
+    getCoinGeckoTicker()
   ]);
 
   const usdRates = buildSupportedUsdRates({
@@ -175,7 +245,7 @@ const getMarketSnapshot = async () => {
         date: fxRate.date
       },
       crypto: {
-        provider: "Binance",
+        provider: "CoinGecko",
         closeTime: btcTicker.closeTime
       }
     }
@@ -232,7 +302,7 @@ const getAssetHistory = async ({ baseCurrency, quoteCurrency, interval = "1h", l
   const snapshot = await getMarketSnapshot();
 
   if (normalizedBase === "BTC") {
-    const klines = await getBinanceKlines({ symbol: "BTCUSDT", interval, limit });
+    const klines = await getCoinGeckoKlines({ symbol: "BTCUSDT", interval, limit });
     return klines.map((entry) => {
       const priceUnits = convertPriceUnits({
         baseCurrency: normalizedBase,
@@ -269,7 +339,7 @@ const getAssetHistory = async ({ baseCurrency, quoteCurrency, interval = "1h", l
 
 const buildPortfolioHistory = async ({ balances, points = 7 }) => {
   const snapshot = await getMarketSnapshot();
-  const btcHistory = await getBinanceKlines({ symbol: "BTCUSDT", interval: "1d", limit: points });
+  const btcHistory = await getCoinGeckoKlines({ symbol: "BTCUSDT", interval: "1d", limit: points });
   const usdRates = snapshot.usdRates;
 
   const stableUsdUnits = balances.reduce((sum, balance) => {

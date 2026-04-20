@@ -23,10 +23,17 @@ const AuthRegister = () => {
     setError("");
   };
 
+  const passwordRules = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,72}$/;
+
   const validate = () => {
     if (formData.password !== formData.confirmPassword) {
       return "Passwords do not match";
     }
+
+    if (!passwordRules.test(formData.password)) {
+      return "Parol kamida 8 ta belgi, katta va kichik harf, raqam va maxsus belgini o'z ichiga olishi kerak.";
+    }
+
     return "";
   };
 

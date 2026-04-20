@@ -75,7 +75,8 @@
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
     "mobile:ios": "npm run mobile:sync && npx cap open ios",
-    "mobile:bundle:release": "cd android && gradlew.bat bundleRelease"
+    "mobile:bundle:release": "cd android && gradlew.bat bundleRelease",
+    "deploy:vercel": "./scripts/deploy-vercel.sh"
   },
   "eslintConfig": {
     "extends": [

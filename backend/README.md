@@ -17,6 +17,9 @@
 6. Test ishga tushiring:
    - `npm --prefix backend test`
 
+### Notes
+- Market data provider: The backend now uses CoinGecko public APIs for crypto market data (this avoids regionally blocked Binance endpoints).
+
 ## Endpoints
 - `GET /api/health`
 - `POST /api/auth/register`

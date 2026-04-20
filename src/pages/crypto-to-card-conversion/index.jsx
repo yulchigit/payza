@@ -262,7 +262,7 @@ const CryptoToCardConversion = () => {
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Live Demo Exchange</h1>
             <p className="text-base md:text-lg text-muted-foreground">
-              Convert UZS, USDT, and BTC using live Binance market data and official CBU FX references
+              Convert UZS, USDT, and BTC using public market data (CoinGecko) and official CBU FX references
             </p>
           </div>
 

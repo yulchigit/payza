@@ -16,7 +16,7 @@ const FeaturedMarketsPanel = ({ markets = [] }) => {
         <Icon name="Activity" size={20} className="text-primary" />
         <div>
           <h3 className="text-lg md:text-xl font-semibold text-foreground">Featured Markets</h3>
-          <p className="text-sm text-muted-foreground">Binance and CBU reference prices</p>
+          <p className="text-sm text-muted-foreground">CoinGecko and CBU reference prices</p>
         </div>
       </div>
 

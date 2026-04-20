@@ -29,17 +29,16 @@ const installMarketFetchMock = () => {
       ]);
     }
 
-    if (url.includes("ticker/24hr")) {
+    if (url.includes("/coins/bitcoin?")) {
       return createJsonResponse({
-        symbol: "BTCUSDT",
-        lastPrice: "72000.00",
-        openPrice: "71000.00",
-        highPrice: "72500.00",
-        lowPrice: "70500.00",
-        volume: "100.0",
-        quoteVolume: "7200000.0",
-        priceChangePercent: "1.4",
-        closeTime: 1776143880755
+        market_data: {
+          current_price: { usd: 72000.0 },
+          high_24h: { usd: 72500.0 },
+          low_24h: { usd: 70500.0 },
+          price_change_percentage_24h: 1.4,
+          price_change_24h: { usd: 1000.0 },
+          total_volume: { usd: 100.0 }
+        }
       });
     }
 

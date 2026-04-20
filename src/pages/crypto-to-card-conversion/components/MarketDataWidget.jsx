@@ -72,7 +72,7 @@ const MarketDataWidget = ({ baseCurrency, quoteCurrency, history = [], featuredM
           <div>
             <p className="text-sm font-medium text-foreground mb-1">Live Reference Flow</p>
             <p className="text-xs text-muted-foreground">
-              Crypto prices come from Binance public market data. UZS conversion uses the official CBU USD reference rate.
+              Crypto prices come from CoinGecko public market data. UZS conversion uses the official CBU USD reference rate.
             </p>
           </div>
         </div>
