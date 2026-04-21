@@ -27,7 +27,7 @@ const TotalBalanceCard = ({ totalBalance, currency = 'USD', dailyChangePercent =
         </div>
       </div>
       <div className="flex items-center justify-between gap-3 text-primary-foreground/90">
-        <span className="text-xs md:text-sm text-neutral-50">Demo portfolio valued with live market references</span>
+        <span className="text-xs md:text-sm text-neutral-50">Live market references</span>
         <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${isPositive ? 'bg-white/20 text-white' : 'bg-black/20 text-white'}`}>
           <Icon name={isPositive ? 'TrendingUp' : 'TrendingDown'} size={14} color="var(--color-primary-foreground)" />
           <span>{isPositive ? '+' : ''}{Number(dailyChangePercent || 0).toFixed(2)}% 24h</span>

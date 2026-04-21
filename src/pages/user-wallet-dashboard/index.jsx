@@ -122,8 +122,8 @@ const UserWalletDashboard = () => {
       <RoleBasedNavigation userRole="user" />
       <main className="pt-24 pb-12 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-8 md:mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Investor Demo Wallet</h1>
-          <p className="text-base md:text-lg text-muted-foreground">Live market references, demo balances, and exchange history</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Wallet</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Qaytganingiz bilan tabriklaymiz!</p>
         </div>
 
         <div className="space-y-6 md:space-y-8">
