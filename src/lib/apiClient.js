@@ -1,7 +1,7 @@
 import axios from "axios";
 import { isNativeRuntime } from "lib/runtime";
 
-const DEFAULT_PUBLIC_API_BASE_URL = "https://payza-backend.onrender.com/api";
+const DEFAULT_PUBLIC_API_BASE_URL = "https://payza.up.railway.app/api";
 
 const normalizeBaseUrl = (value) => String(value || "").trim().replace(/\/+$/, "");
 
@@ -16,20 +16,58 @@ const isLikelyPlaceholderUrl = (value) => {
   );
 };
 
-const isLocalhostUrl = (value) => {
+const tryParseUrl = (value) => {
   try {
-    const parsed = new URL(value);
-    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    return new URL(value);
   } catch (error) {
-    return false;
+    return null;
   }
+};
+
+const isAbsoluteHttpUrl = (value) => {
+  const parsed = tryParseUrl(value);
+  return Boolean(parsed && (parsed.protocol === "https:" || parsed.protocol === "http:"));
+};
+
+const isLocalhostUrl = (value) => {
+  const parsed = tryParseUrl(value);
+  return Boolean(parsed && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"));
+};
+
+const isSameOriginAsCurrentPage = (value) => {
+  if (typeof window === "undefined") return false;
+
+  const parsed = tryParseUrl(value);
+  if (!parsed) return false;
+
+  const currentProtocol = String(window.location.protocol || "").toLowerCase();
+  const currentHost = String(window.location.host || "").toLowerCase();
+  if (!currentProtocol || !currentHost) return false;
+
+  return parsed.protocol.toLowerCase() === currentProtocol && parsed.host.toLowerCase() === currentHost;
+};
+
+const isUnsafeHostedFrontendApiUrl = (value) => {
+  if (!isAbsoluteHttpUrl(value)) {
+    return true;
+  }
+
+  if (isLikelyPlaceholderUrl(value)) {
+    return true;
+  }
+
+  if (isSameOriginAsCurrentPage(value) && !isLocalhostUrl(value)) {
+    return true;
+  }
+
+  return false;
 };
 
 const readConfiguredBaseUrl = (...candidates) => {
   for (const candidate of candidates) {
     const normalized = normalizeBaseUrl(candidate);
     if (!normalized) continue;
-    if (isLikelyPlaceholderUrl(normalized)) continue;
+    if (isUnsafeHostedFrontendApiUrl(normalized)) continue;
     return normalized;
   }
   return "";
